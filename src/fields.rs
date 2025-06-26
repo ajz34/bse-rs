@@ -4,8 +4,14 @@ use crate::prelude::*;
 
 /* #region field for components */
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum BseAuxiliary {
+    Str(String),
+    Vec(Vec<String>),
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BseFieldGtoElectronShell {
+pub struct BseGtoElectronShell {
     pub function_type: String,
     pub region: String,
     pub angular_momentum: Vec<i32>,
@@ -16,13 +22,13 @@ pub struct BseFieldGtoElectronShell {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BseFieldGtoElement {
+pub struct BseGtoElement {
     pub references: Vec<String>,
-    pub electron_shells: Vec<BseFieldGtoElectronShell>,
+    pub electron_shells: Vec<BseGtoElectronShell>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BseFieldEcpPotential {
+pub struct BseEcpPotential {
     pub angular_momentum: Vec<i32>,
     #[serde(deserialize_with = "deserialize_vec_vec_f64")]
     pub coefficients: Vec<Vec<f64>>,
@@ -33,10 +39,10 @@ pub struct BseFieldEcpPotential {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BseFieldEcpElement {
+pub struct BseEcpElement {
     pub references: Vec<String>,
     pub ecp_electrons: i32,
-    pub ecp_potentials: Vec<BseFieldEcpPotential>,
+    pub ecp_potentials: Vec<BseEcpPotential>,
 }
 
 /* #endregion */
@@ -44,58 +50,62 @@ pub struct BseFieldEcpElement {
 /* #region field for skeletons */
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BseFieldMolssiBseSchema {
+pub struct BseMolssiBseSchema {
     pub schema_type: String,
     pub schema_version: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseSkelComponentGto {
-    pub molssi_bse_schema: BseFieldMolssiBseSchema,
+    pub molssi_bse_schema: BseMolssiBseSchema,
     pub description: String,
     pub data_source: String,
-    pub elements: HashMap<i32, BseFieldGtoElement>,
+    #[serde(serialize_with = "ordered_map")]
+    pub elements: HashMap<i32, BseGtoElement>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseSkelComponentEcp {
-    pub molssi_bse_schema: BseFieldMolssiBseSchema,
+    pub molssi_bse_schema: BseMolssiBseSchema,
     pub description: String,
     pub data_source: String,
-    pub elements: HashMap<i32, BseFieldEcpElement>,
+    #[serde(serialize_with = "ordered_map")]
+    pub elements: HashMap<i32, BseEcpElement>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BseFieldSkelElement {
+pub struct BseElementComponents {
     pub components: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseSkelElement {
-    pub molssi_bse_schema: BseFieldMolssiBseSchema,
+    pub molssi_bse_schema: BseMolssiBseSchema,
     pub name: String,
     pub description: String,
-    pub elements: HashMap<i32, BseFieldSkelElement>,
+    #[serde(serialize_with = "ordered_map")]
+    pub elements: HashMap<i32, BseElementComponents>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseSkelTable {
-    pub molssi_bse_schema: BseFieldMolssiBseSchema,
+    pub molssi_bse_schema: BseMolssiBseSchema,
     pub revision_description: String,
     pub revision_date: String,
+    #[serde(serialize_with = "ordered_map")]
     pub elements: HashMap<i32, String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseSkelMetadata {
-    pub molssi_bse_schema: BseFieldMolssiBseSchema,
+    pub molssi_bse_schema: BseMolssiBseSchema,
     pub names: Vec<String>,
     pub tags: Vec<String>,
     pub family: String,
     pub description: String,
     pub role: String,
-    #[serde(deserialize_with = "deserialize_auxiliary_map")]
-    pub auxiliaries: HashMap<String, Vec<String>>,
+    #[serde(serialize_with = "ordered_map")]
+    pub auxiliaries: HashMap<String, BseAuxiliary>,
 }
 
 /* #endregion */
@@ -124,22 +134,63 @@ pub struct BseRootMetadata {
     pub family: String,
     pub role: String,
     pub function_types: Vec<String>,
-    #[serde(deserialize_with = "deserialize_auxiliary_map")]
-    pub auxiliaries: HashMap<String, Vec<String>>,
+    #[serde(serialize_with = "ordered_map")]
+    pub auxiliaries: HashMap<String, BseAuxiliary>,
+    #[serde(serialize_with = "ordered_map")]
     pub versions: HashMap<i32, BseRootMetadataVer>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BseBasisReference {
+    pub reference_keys: Vec<String>,
+    pub reference_description: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BseBasisElement {
+    pub references: Vec<BseBasisReference>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub electron_shells: Option<Vec<BseGtoElectronShell>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ecp_potentials: Option<Vec<BseEcpPotential>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ecp_electrons: Option<i32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BseBasis {
+    pub molssi_bse_schema: BseMolssiBseSchema,
+    pub revision_description: String,
+    pub revision_date: String,
+    pub version: i32,
+    pub function_types: Vec<String>,
+    pub name: String,
+    pub names: Vec<String>,
+    pub tags: Vec<String>,
+    pub family: String,
+    pub description: String,
+    pub role: String,
+    #[serde(serialize_with = "ordered_map")]
+    pub auxiliaries: HashMap<String, BseAuxiliary>,
+    #[serde(serialize_with = "ordered_map")]
+    pub elements: HashMap<i32, BseBasisElement>,
 }
 
 /* #endregion */
 
 /* #region ser/de implementation */
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
-pub enum FieldAuxiliary {
-    Str(String),
-    Vec(Vec<String>),
+/// For use with serde's [serialize_with] attribute
+/// <https://stackoverflow.com/questions/42723065/how-to-sort-hashmap-keys-when-serializing-with-serde>
+fn ordered_map<S, K: Ord + Serialize, V: Serialize>(value: &HashMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    let ordered: BTreeMap<_, _> = value.iter().collect();
+    ordered.serialize(serializer)
 }
 
-impl<'de> Deserialize<'de> for FieldAuxiliary {
+impl<'de> Deserialize<'de> for BseAuxiliary {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -149,9 +200,21 @@ impl<'de> Deserialize<'de> for FieldAuxiliary {
 
         let value: Value = Value::deserialize(deserializer)?;
         match value {
-            Value::String(v) => Ok(FieldAuxiliary::Str(v)),
-            Value::Array(arr) => Ok(FieldAuxiliary::Vec(arr.iter().map(|v| v.to_string()).collect())),
+            Value::String(v) => Ok(BseAuxiliary::Str(v)),
+            Value::Array(arr) => Ok(BseAuxiliary::Vec(arr.iter().map(|v| v.to_string()).collect())),
             _ => Err(D::Error::custom("Expected a string or an array of strings")),
+        }
+    }
+}
+
+impl Serialize for BseAuxiliary {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            BseAuxiliary::Str(s) => s.serialize(serializer),
+            BseAuxiliary::Vec(v) => v.serialize(serializer),
         }
     }
 }
@@ -160,12 +223,12 @@ pub fn deserialize_auxiliary_map<'de, D>(deserializer: D) -> Result<HashMap<Stri
 where
     D: Deserializer<'de>,
 {
-    let auxiliaries: HashMap<String, FieldAuxiliary> = HashMap::deserialize(deserializer)?;
+    let auxiliaries: HashMap<String, BseAuxiliary> = HashMap::deserialize(deserializer)?;
     let mut result = HashMap::new();
     for (key, value) in auxiliaries {
         match value {
-            FieldAuxiliary::Str(s) => result.insert(key, vec![s]),
-            FieldAuxiliary::Vec(v) => result.insert(key, v),
+            BseAuxiliary::Str(s) => result.insert(key, vec![s]),
+            BseAuxiliary::Vec(v) => result.insert(key, v),
         };
     }
     Ok(result)
@@ -283,6 +346,65 @@ where
     D: Deserializer<'de>,
 {
     deserializer.deserialize_seq(VecVecF64Visitor)
+}
+
+/* #endregion */
+
+/* #region cached read json */
+
+pub fn read_skel_component_gto_file(element_relpath: &str, data_dir: &str) -> BseSkelComponentGto {
+    read_skel_component_gto_file_f(element_relpath, data_dir).unwrap()
+}
+
+pub fn read_skel_component_ecp_file(element_relpath: &str, data_dir: &str) -> BseSkelComponentEcp {
+    read_skel_component_ecp_file_f(element_relpath, data_dir).unwrap()
+}
+
+pub fn read_skel_element_file(skel_element_relpath: &str, data_dir: &str) -> BseSkelElement {
+    read_skel_element_file_f(skel_element_relpath, data_dir).unwrap()
+}
+
+pub fn read_skel_table_file(skel_table_relpath: &str, data_dir: &str) -> BseSkelTable {
+    read_skel_table_file_f(skel_table_relpath, data_dir).unwrap()
+}
+
+pub fn read_skel_metadata_file(skel_metadata_relpath: &str, data_dir: &str) -> BseSkelMetadata {
+    read_skel_metadata_file_f(skel_metadata_relpath, data_dir).unwrap()
+}
+
+#[cached(size = 50, key = "String", convert = r#" {format!("{data_dir}/{element_relpath}")} "#)]
+pub fn read_skel_component_gto_file_f(element_relpath: &str, data_dir: &str) -> Result<BseSkelComponentGto, BseError> {
+    let path = format!("{data_dir}/{element_relpath}");
+    let content = std::fs::read_to_string(path)?;
+    serde_json::from_str(&content).map_err(BseError::from)
+}
+
+#[cached(size = 50, key = "String", convert = r#" {format!("{data_dir}/{element_relpath}")} "#)]
+pub fn read_skel_component_ecp_file_f(element_relpath: &str, data_dir: &str) -> Result<BseSkelComponentEcp, BseError> {
+    let path = format!("{data_dir}/{element_relpath}");
+    let content = std::fs::read_to_string(path)?;
+    serde_json::from_str(&content).map_err(BseError::from)
+}
+
+#[cached(size = 50, key = "String", convert = r#" {format!("{data_dir}/{skel_element_relpath}")} "#)]
+pub fn read_skel_element_file_f(skel_element_relpath: &str, data_dir: &str) -> Result<BseSkelElement, BseError> {
+    let path = format!("{data_dir}/{skel_element_relpath}");
+    let content = std::fs::read_to_string(path)?;
+    serde_json::from_str(&content).map_err(BseError::from)
+}
+
+#[cached(size = 50, key = "String", convert = r#" {format!("{data_dir}/{skel_table_relpath}")} "#)]
+pub fn read_skel_table_file_f(skel_table_relpath: &str, data_dir: &str) -> Result<BseSkelTable, BseError> {
+    let path = format!("{data_dir}/{skel_table_relpath}");
+    let content = std::fs::read_to_string(path)?;
+    serde_json::from_str(&content).map_err(BseError::from)
+}
+
+#[cached(size = 50, key = "String", convert = r#" {format!("{data_dir}/{skel_metadata_relpath}")} "#)]
+pub fn read_skel_metadata_file_f(skel_metadata_relpath: &str, data_dir: &str) -> Result<BseSkelMetadata, BseError> {
+    let path = format!("{data_dir}/{skel_metadata_relpath}");
+    let content = std::fs::read_to_string(path)?;
+    serde_json::from_str(&content).map_err(BseError::from)
 }
 
 /* #endregion */

@@ -10,6 +10,8 @@ pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
+pub static MAIN_URL: &str = "https://www.basissetexchange.org";
+
 /* #region data directory */
 
 pub static BSE_DATA_DIR_SPECIFIED: Mutex<Option<String>> = Mutex::new(None);

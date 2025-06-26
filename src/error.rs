@@ -3,6 +3,7 @@ use std::{error::Error, fmt::Display};
 #[derive(Debug, Clone)]
 pub enum BseError {
     DataNotFound(String),
+    DataError(String),
     KeyError(String),
     ValueError(String),
     IOError(String),
@@ -41,6 +42,7 @@ macro_rules! bse_trace {
 macro_rules! bse_raise {
     ($errtype: ident, $($arg:tt)*) => {{
         use $crate::prelude::*;
+        use std::fmt::Write;
         let mut s = String::new();
         write!(s, bse_trace!()).unwrap();
         write!(s, concat!("BseError::", stringify!($errtype), ": ")).unwrap();
