@@ -19,11 +19,11 @@ pub fn compose_table_basis(file_relpath: &str, data_dir: &str) -> BseBasis {
 /// This function reads the info from the given file, and reads all the component basis set
 /// information from the files listed therein. It then composes all the information together into
 /// one 'elemental' basis dictionary
-pub fn compose_elemental_basis(file_relpath: &str, data_dir: &str) -> HashMap<i32, BseBasisElement> {
+pub fn compose_elemental_basis(file_relpath: &str, data_dir: &str) -> HashMap<String, BseBasisElement> {
     compose_elemental_basis_f(file_relpath, data_dir).unwrap()
 }
 
-pub(crate) fn whole_basis_types(basis_elements: &HashMap<i32, BseBasisElement>) -> Vec<String> {
+pub(crate) fn whole_basis_types(basis_elements: &HashMap<String, BseBasisElement>) -> Vec<String> {
     let mut function_types = HashSet::new();
     for basis_element in basis_elements.values() {
         if let Some(shells) = &basis_element.electron_shells {
@@ -38,7 +38,7 @@ pub(crate) fn whole_basis_types(basis_elements: &HashMap<i32, BseBasisElement>) 
 pub fn compose_elemental_basis_f(
     file_relpath: &str,
     data_dir: &str,
-) -> Result<HashMap<i32, BseBasisElement>, BseError> {
+) -> Result<HashMap<String, BseBasisElement>, BseError> {
     // read skeleton element
     let skel_element_relpath = file_relpath;
     let skel_element = read_skel_element_file_f(skel_element_relpath, data_dir)?;
@@ -120,7 +120,7 @@ pub fn compose_elemental_basis_f(
                 },
             }
         }
-        basis_elements.insert(*atomic_number, basis_element);
+        basis_elements.insert(atomic_number.clone(), basis_element);
     }
 
     Ok(basis_elements)
@@ -146,19 +146,18 @@ pub fn compose_table_basis_f(file_relpath: &str, data_dir: &str) -> Result<BseBa
     // generate field elements in BseBasis
     let mut basis_elements = HashMap::new();
     for (atomic_number, skl_element_realpath) in &skel_table.elements {
-        basis_elements.insert(*atomic_number, skel_element_map[skl_element_realpath][atomic_number].clone());
+        basis_elements.insert(atomic_number.clone(), skel_element_map[skl_element_realpath][atomic_number].clone());
     }
 
     // version is also defined in metadata (field version), but can be inferred from the file name.
     // take version `1` from file `def2-TZVP.1.table.json`, which is the last third value.
     // if version is not found, use -1 as default.
-    let version = catch_unwind(|| skel_table_relpath.split('.').rev().collect_vec()[2].parse::<i32>().unwrap())
-        .map_err(|_| {
-            BseError::DataError(format!(
-                "{}BseError::DataError: Version annotation not found in {skel_table_relpath}",
-                bse_trace!()
-            ))
-        })?;
+    let version = catch_unwind(|| skel_table_relpath.split('.').rev().collect_vec()[2].to_string()).map_err(|_| {
+        BseError::DataError(format!(
+            "{}BseError::DataError: Version annotation not found in {skel_table_relpath}",
+            bse_trace!()
+        ))
+    })?;
 
     // function types are obtained by iterating elements.
     let function_types = whole_basis_types(&basis_elements);
@@ -200,9 +199,9 @@ mod tests {
         let time = std::time::Instant::now();
         let table_relpath = "def2-TZVP.1.table.json";
         let basis = compose_table_basis(table_relpath, &data_dir);
-        let json_str = serde_json::to_string_pretty(&basis.elements[&1]).unwrap();
+        let json_str = serde_json::to_string_pretty(&basis.elements["1"]).unwrap();
         println!("{}", &json_str);
-        let json_str = serde_json::to_string_pretty(&basis.elements[&54]).unwrap();
+        let json_str = serde_json::to_string_pretty(&basis.elements["54"]).unwrap();
         println!("{}", &json_str);
         println!("compose_table_basis took {} ms", time.elapsed().as_millis());
 

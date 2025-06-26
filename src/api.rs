@@ -116,10 +116,10 @@ fn get_basis_metadata(name: &str, data_dir: &str) -> Result<BseRootMetadata, Bse
 #[builder(build_fn(error = "BseError"))]
 pub struct BseGetBasisArgs {
     #[builder(default)]
-    elements: Option<Vec<i32>>,
+    elements: Option<String>,
 
     #[builder(default)]
-    version: Option<i32>,
+    version: Option<String>,
 
     #[builder(default = false)]
     uncontract_general: bool,
@@ -199,5 +199,7 @@ mod tests {
         assert_eq!(basis.name, "STO-3G");
         let basis_json = serde_json::to_string_pretty(&basis).expect("Failed to serialize basis set to JSON");
         println!("Basis set JSON: {basis_json}");
+        // write the basis set to a file for inspection
+        std::fs::write("tmp/sto-3g_basis.json", basis_json).unwrap()
     }
 }
