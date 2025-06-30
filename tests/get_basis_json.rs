@@ -13,6 +13,7 @@ mod test {
     #[case("remove_free_primitives", "cc-pVTZ"    , ["elements = '1, 6-O'"    , "remove_free_primitives = true"].join("\n"))]
     #[case("remove_free_primitives", "def2-TZVPD" , ["elements = '1-3, 49-51'", "remove_free_primitives = true"].join("\n"))]
     #[case("make_general"          , "aug-cc-pVTZ", ["elements = '1, 6-O'"    , "make_general = true"          ].join("\n"))]
+    #[case("optimize_general"      , "aug-cc-pVTZ", ["elements = '1, 6-O'"    , "optimize_general = true"      ].join("\n"))]
     fn test_get_basis_json(#[case] scene: &str, #[case] basis: &str, #[case] args: String) {
         let manifest_dir = env!("CARGO_MANIFEST_DIR");
         let ref_file = format!("{manifest_dir}/tests/python_ref/get_basis_json/{basis}-{scene}.json");

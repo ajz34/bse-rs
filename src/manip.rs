@@ -345,3 +345,68 @@ pub fn remove_free_primitives(basis: &mut BseBasis) {
 
     // TODO: prune_basis
 }
+
+/// Optimizes the general contraction using the method of Hashimoto et al
+///
+/// # See also
+///
+/// T. Hashimoto, K. Hirao, H. Tatewaki
+/// 'Comment on Dunning's correlation-consistent basis set'
+/// Chemical Physics Letters v243, Issues 1-2, pp, 190-192 (1995)
+/// <https://doi.org/10.1016/0009-2614(95)00807-G>
+pub fn optimize_general(basis: &mut BseBasis) {
+    // Make as generally-contracted as possible first
+    make_general(basis, true);
+
+    for (_, eldata) in basis.elements.iter_mut() {
+        if eldata.electron_shells.is_none() {
+            continue;
+        }
+
+        let elshells = eldata.electron_shells.as_mut().unwrap();
+        for sh in elshells {
+            let coefficients = &mut sh.coefficients;
+            let nam = sh.angular_momentum.len();
+
+            // Skip sp shells and shells with only one general contraction
+            if nam > 1 || coefficients.len() < 2 {
+                continue;
+            }
+
+            // First, find columns (general contractions) with a single non-zero value
+            let single_columns: Vec<usize> =
+                coefficients.iter().enumerate().filter(|(_, c)| is_single_column(c)).map(|(idx, _)| idx).collect();
+
+            // Find the corresponding rows that have a value in one of these columns
+            // Note that at this stage, the row may have coefficients in more than one
+            // column. That is what we are looking for
+
+            // Also, test to see that each row is only represented once. That is, there
+            // should be no rows that are part of single columns (this would
+            // represent duplicate shells). This can happen in poorly-formatted
+            // basis sets and is an error
+            let mut row_col_pairs = Vec::new();
+            let mut all_row_idx = Vec::new();
+            for &col_idx in &single_columns {
+                let col = &coefficients[col_idx];
+                col.iter().enumerate().for_each(|(row_idx, value)| {
+                    if value.parse::<f64>().unwrap() != 0.0 && !all_row_idx.contains(&row_idx) {
+                        // Store the index of the nonzero value in single_columns
+                        row_col_pairs.push((row_idx, col_idx));
+                        all_row_idx.push(row_idx);
+                    }
+                });
+            }
+
+            // Now for each row/col pair, zero out the entire row
+            // EXCEPT for the column that has the single value
+            for (row_idx, col_idx) in row_col_pairs {
+                for (idx, col) in coefficients.iter_mut().enumerate() {
+                    if col[row_idx].parse::<f64>().unwrap() != 0.0 && col_idx != idx {
+                        col[row_idx] = "0.0000000E+00".to_string();
+                    }
+                }
+            }
+        }
+    }
+}
