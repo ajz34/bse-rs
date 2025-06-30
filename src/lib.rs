@@ -6,5 +6,6 @@ pub mod error;
 pub mod fields;
 pub mod lut;
 pub mod lut_data;
+pub mod manip;
 pub mod misc;
 pub mod prelude;

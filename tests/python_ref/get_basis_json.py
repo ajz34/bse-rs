@@ -18,6 +18,16 @@ for (basis, elements) in cfgs:
     with open(f"{out_root}/{basis}.json", "w") as f:
         json.dump(bse.get_basis(basis, elements=elements), f, indent=2)
 
+# ### remove_free_primitives
+
+for (basis, elements) in cfgs:
+    with open(f"{out_root}/{basis}-remove_free_primitives.json", "w") as f:
+        json.dump(bse.get_basis(basis, elements=elements, remove_free_primitives=True), f, indent=2)
+
+
+
+
+
 
 
 

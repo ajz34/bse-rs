@@ -224,6 +224,20 @@ pub fn get_basis_f(name: &str, args: BseGetBasisArgs) -> Result<BseBasis, BseErr
         }
     }
 
+    // Note that from now on, the pipleline is going to modify basis_dict.
+    // That is ok, since we are returned a unique instance from compose_table_basis.
+
+    let mut needs_pruning = false;
+
+    if args.remove_free_primitives {
+        manip::remove_free_primitives(&mut basis_dict);
+        needs_pruning = true;
+    }
+
+    if needs_pruning {
+        // TODO: prune_basis
+    }
+
     Ok(basis_dict)
 }
 

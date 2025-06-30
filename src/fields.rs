@@ -143,9 +143,9 @@ pub struct BseBasisReference {
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct BseBasisElement {
+    pub references: Vec<BseBasisReference>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub electron_shells: Option<Vec<BseElectronShell>>,
-    pub references: Vec<BseBasisReference>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ecp_potentials: Option<Vec<BseEcpPotential>>,
     #[serde(skip_serializing_if = "Option::is_none")]
