@@ -569,18 +569,7 @@ pub fn geometric_augmentation(basis: &mut BseBasis, nadd: i32, steep: bool) {
                 new_exponents.push(ref_exp * beta.powi(i));
             }
 
-            // the scientific notation of rust is not exactly the same as Python's
-            #[inline]
-            fn format_exponent(exp: f64) -> String {
-                let token = format!("{exp:.6e}");
-                let (s, e) = token.split_once('e').unwrap();
-                let e = e.parse::<i32>().unwrap();
-                let sgn = if e < 0 { '-' } else { '+' };
-                let e = e.abs();
-                format!("{s}e{sgn}{e:0>2}")
-            }
-
-            let new_exponents: Vec<String> = new_exponents.iter().map(|&x| format_exponent(x)).collect();
+            let new_exponents: Vec<String> = new_exponents.iter().map(|&x| misc::format_exponent(x)).collect();
 
             // add the new exponents as new uncontracted shells
             for ex in new_exponents {
@@ -603,6 +592,211 @@ pub fn geometric_augmentation(basis: &mut BseBasis, nadd: i32, steep: bool) {
                 shells.extend(new_shells);
             }
         }
+    }
+}
+
+/// Create a Coulomb fitting basis set for the given orbital basis set.
+///
+/// G. L. Stoychev, A. A. Auer, and F. Neese
+/// 'Automatic Generation of Auxiliary Basis Sets'
+/// J. Chem. Theory Comput. 13, 554 (2017)
+/// <http://doi.org/10.1021/acs.jctc.6b01041>
+pub fn autoaux_basis(basis: &BseBasis) -> BseBasis {
+    use libm::tgamma;
+    use std::f64::consts::PI;
+
+    // We want the basis set as generally contracted. Get a copy so
+    // that we don't change the input set
+    let mut basis = basis.clone();
+    make_general(&mut basis, false);
+
+    let mut auxbasis_data = HashMap::new();
+
+    for (element_z, eldata) in &basis.elements {
+        let elshells = match &eldata.electron_shells {
+            Some(shells) => shells,
+            None => {
+                println!("No electron shells for {element_z}");
+                continue;
+            },
+        };
+
+        // What is maximal angular momentum?
+        let lmax = elshells.iter().map(|sh| sh.angular_momentum[0]).max().unwrap_or(0);
+
+        fn update_minimum_array(array: &mut [Option<f64>], index: usize, value: f64) {
+            if let Some(current) = array[index] {
+                array[index] = Some(current.min(value));
+            } else {
+                array[index] = Some(value);
+            }
+        }
+
+        fn update_maximum_array(array: &mut [Option<f64>], index: usize, value: f64) {
+            if let Some(current) = array[index] {
+                array[index] = Some(current.max(value));
+            } else {
+                array[index] = Some(value);
+            }
+        }
+
+        // Form values of smallest and largest primitive exponent
+        let mut amin = vec![None; lmax as usize + 1];
+        let mut amax_prim = vec![None; lmax as usize + 1];
+        let mut amax_eff = vec![None; lmax as usize + 1];
+
+        for sh in elshells {
+            let exponents = &sh.exponents;
+            let coefficients = &sh.coefficients;
+            let ncontr = coefficients.len();
+            let shell_am = &sh.angular_momentum;
+            assert_eq!(shell_am.len(), 1);
+            let l = shell_am[0] as usize;
+
+            // Store values of smallest and largest exponent
+            let mut expval: Vec<f64> = exponents.iter().map(|x| x.parse().unwrap()).collect();
+            expval.sort_by(|a, b| b.partial_cmp(a).unwrap());
+
+            update_maximum_array(&mut amax_prim, l, expval[0]);
+            update_minimum_array(&mut amin, l, *expval.last().unwrap());
+
+            // Now we just compute the spatial extent <r> for functions (in contracted
+            // form), eq (8) in the paper
+            let rmat = ints::gto_R_contr(exponents, coefficients, shell_am[0]);
+            // Extract the diagonal values
+            let rvec: Vec<f64> = (0..ncontr).map(|i| rmat[i][i]).collect();
+
+            // This gives us the "quasi-uncontracted" orbital basis with primitive exponents
+            // Prefactor defined in eq 10
+            let k_value = 2f64.powi(2 * l as i32 + 1) * tgamma(l as f64 + 2.0).powi(2) / tgamma(2.0 * l as f64 + 3.0);
+
+            // Calculate effective exponent with eq 9, note that it
+            // must be proportional to the inverse square of the
+            // radius, not the inverse radius
+            let effective_exponents: Vec<f64> =
+                rvec.iter().map(|rexp| 2.0 * k_value.powi(2) / (PI * rexp.powi(2))).collect();
+
+            // Sort list in decreasing order
+            let mut effective_exponents = effective_exponents;
+            effective_exponents.sort_by(|a, b| b.partial_cmp(a).unwrap());
+            // Store largest effective exponent
+            update_maximum_array(&mut amax_eff, l, effective_exponents[0]);
+        }
+
+        // Collect the smallest and largest exponents
+        let mut a_minaux = vec![None; 2 * lmax as usize + 1];
+        let mut a_maxaux_prim = vec![None; 2 * lmax as usize + 1];
+        let mut a_maxaux_eff = vec![None; 2 * lmax as usize + 1];
+
+        for l in 0..=lmax as usize {
+            for lp in l..=lmax as usize {
+                // Calculate the values of the exponents
+                let minaux = amin[l].unwrap() + amin[lp].unwrap();
+                let maxauxp = amax_prim[l].unwrap() + amax_prim[lp].unwrap();
+                let maxauxe = amax_eff[l].unwrap() + amax_eff[lp].unwrap();
+
+                // Loop over all possible coupled angular momenta
+                for laux in ((l as i32 - lp as i32).unsigned_abs() as usize)..=(l + lp) {
+                    update_minimum_array(&mut a_minaux, laux, minaux);
+                    update_maximum_array(&mut a_maxaux_prim, laux, maxauxp);
+                    update_maximum_array(&mut a_maxaux_eff, laux, maxauxe);
+                }
+            }
+        }
+
+        // Form lval: highest occupied momentum of occupied shells for
+        // atom. H and He have lval=0; Li, Be and everything after that
+        // have lval=1; 3d transition metals have lval=2 and
+        // lanthanoids have lval=3.
+        let z = element_z.parse::<i32>().unwrap();
+        let lval = match z {
+            1..=2 => 0,   // H and He
+            3..=20 => 1,  // Li - Ca
+            21..=56 => 2, // Sc - Ba
+            57.. => 3,
+            ..=0 => unreachable!(),
+        };
+
+        // Form linc: 1 up to Ar, 2 for the rest
+        let linc = if z > 18 { 2 } else { 1 };
+
+        // Limit maximal angular momentum
+        let lmax_aux = (2 * lval).max((lmax + linc) as i32).min(2 * lmax) as usize;
+        println!("Generating auxiliary basis for element {element_z} with lmax_aux = {lmax_aux}");
+
+        // Values from Table I; factor 7.0 for P functions is missing in the paper
+        let flaux = [20.0, 7.0, 4.0, 4.0, 3.5, 2.5, 2.0, 2.0];
+        let blaux_big = [1.8, 2.0, 2.2, 2.2, 2.2, 2.3, 3.0, 3.0];
+        let b_small = 1.8;
+
+        // Form actual upper limit for even-tempered expansion
+        let mut amax_aux = vec![None; lmax_aux + 1];
+        for laux in 0..=lmax_aux {
+            if laux <= 2 * lval as usize {
+                // There's a typo in the paper, max instead of min
+                amax_aux[laux] = Some((flaux[laux] * a_maxaux_eff[laux].unwrap()).min(a_maxaux_prim[laux].unwrap()));
+            } else {
+                amax_aux[laux] = Some(a_maxaux_eff[laux].unwrap());
+            }
+        }
+
+        // Create aux basis
+        let aux_element_data = auxbasis_data.entry(element_z.to_string()).or_insert_with(BseBasisElement::default);
+
+        for laux in 0..=lmax_aux {
+            // Generate the exponents
+            let mut exponents = Vec::new();
+            let mut current_exponent = a_minaux[laux].unwrap();
+            loop {
+                exponents.push(misc::format_exponent(current_exponent));
+                // This is not exactly the same to original Python bse implementation
+                // where its condition is `current_exponent >= amax_aux[laux]`
+                // `amax_aux` can suffer some numerical discrepancies; so a little resolve here
+                if current_exponent - amax_aux[laux].unwrap() > 10.0 * f64::EPSILON {
+                    break;
+                }
+
+                if laux <= 2 * lval as usize {
+                    current_exponent *= b_small;
+                } else {
+                    current_exponent *= blaux_big[laux.min(blaux_big.len() - 1)];
+                }
+            }
+
+            // Create shells
+            for z in exponents {
+                let function_type = lut::function_type_from_am(&[laux as i32], "gto", "spherical");
+                let shell = BseElectronShell {
+                    function_type,
+                    region: String::new(),
+                    angular_momentum: vec![laux as i32],
+                    exponents: vec![z],
+                    coefficients: vec![vec!["1.0".to_string()]],
+                };
+                aux_element_data.electron_shells.get_or_insert_with(Vec::new).push(shell);
+            }
+        }
+    }
+
+    // Finalize basis
+    let mut molssi_bse_schema = basis.molssi_bse_schema.clone();
+    molssi_bse_schema.schema_type = "component".to_string();
+    let function_types = compose::whole_basis_types(&auxbasis_data);
+
+    BseBasis {
+        molssi_bse_schema,
+        revision_description: basis.revision_description.clone(),
+        revision_date: basis.revision_date.clone(),
+        elements: auxbasis_data,
+        version: basis.version.clone(),
+        function_types,
+        names: basis.names.clone(),
+        tags: basis.tags.clone(),
+        family: basis.family.clone(),
+        description: String::new(),
+        role: "rifit".to_string(),
+        auxiliaries: HashMap::new(),
+        name: format!("{}_autoaux", basis.name),
     }
 }
 

@@ -205,13 +205,14 @@ pub fn get_basis_f(name: &str, args: BseGetBasisArgs) -> Result<BseBasis, BseErr
 
             // Are elements part of this basis set?
             let bs_elements_keys = bs_elements.keys().map(|s| s.parse::<i32>().unwrap()).collect::<HashSet<_>>();
+            let bs_elements_keys_vec = bs_elements_keys.iter().sorted().collect_vec();
             let elements_set: HashSet<i32> = HashSet::from_iter(elements.clone());
             if !elements_set.is_subset(&bs_elements_keys) {
                 bse_raise!(
                     DataNotFound,
                     "Elements {:?} not found in basis set `{name}`. Available elements: {:?}",
                     elements,
-                    bs_elements_keys
+                    bs_elements_keys_vec
                 )?;
             }
 
@@ -276,6 +277,13 @@ pub fn get_basis_f(name: &str, args: BseGetBasisArgs) -> Result<BseBasis, BseErr
     // Re-make general
     if (args.augment_diffuse > 0 || args.augment_steep > 0) && args.make_general {
         manip::make_general(&mut basis_dict, false);
+    }
+
+    match args.get_aux {
+        0 => (),
+        1 => basis_dict = manip::autoaux_basis(&basis_dict),
+        2 => unimplemented!(),
+        _ => bse_raise!(KeyError, "Invalid value for `get_aux`: {}", args.get_aux)?,
     }
 
     Ok(basis_dict)

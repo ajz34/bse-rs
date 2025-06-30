@@ -113,6 +113,11 @@ pub fn amchar_to_int(amchar: &str, hij: bool) -> Option<Vec<i32>> {
     amchar.chars().map(|c| amchar_map.find(c).map(|i| i as i32)).collect()
 }
 
+#[inline]
+pub fn function_type_from_am(shell_am: &[i32], base_type: &str, spherical_type: &str) -> String {
+    if *shell_am.iter().max().unwrap() <= 1 { base_type.to_string() } else { format!("{base_type}_{spherical_type}") }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

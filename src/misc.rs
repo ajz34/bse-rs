@@ -2,6 +2,17 @@
 
 use crate::prelude::*;
 
+// the scientific notation of rust is not exactly the same as Python's
+#[inline]
+pub(crate) fn format_exponent(exp: f64) -> String {
+    let token = format!("{exp:.6e}");
+    let (s, e) = token.split_once('e').unwrap();
+    let e = e.parse::<i32>().unwrap();
+    let sgn = if e < 0 { '-' } else { '+' };
+    let e = e.abs();
+    format!("{s}e{sgn}{e:0>2}")
+}
+
 /// Transposes a matrix (list of lists) commonly done do coefficients.
 pub fn transpose_matrix<T>(mat: &[Vec<T>]) -> Vec<Vec<T>>
 where
