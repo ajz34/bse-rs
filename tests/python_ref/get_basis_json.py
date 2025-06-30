@@ -13,6 +13,10 @@ cfgs = [
     ("remove_free_primitives", "cc-pVTZ"    , {"elements": "1, 6-O"    , "remove_free_primitives": True}),
     ("remove_free_primitives", "def2-TZVPD" , {"elements": "1-3, 49-51", "remove_free_primitives": True}),
     ("make_general"          , "aug-cc-pVTZ", {"elements": "1, 6-O"    , "make_general": True}),
+    ("optimize_general"      , "aug-cc-pVTZ", {"elements": "1, 6-O"    , "optimize_general": True}),
+    ("uncontract_segmented"  , "aug-cc-pVTZ", {"elements": "1, 6-O"    , "uncontract_segmented": True}),
+    ("uncontract_general"    , "aug-cc-pVTZ", {"elements": "1, 6-O"    , "uncontract_general": True}),
+    ("uncontract_spdf"       , "6-31G",       {"elements": "1, 6-O"    , "uncontract_spdf": True}),
 ]
 
 for (scene, basis, kwargs) in cfgs:

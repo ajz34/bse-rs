@@ -239,6 +239,22 @@ pub fn get_basis_f(name: &str, args: BseGetBasisArgs) -> Result<BseBasis, BseErr
         needs_pruning = true;
     }
 
+    // uncontract_segmented implies uncontract_general
+    if args.uncontract_segmented {
+        manip::uncontract_segmented(&mut basis_dict);
+        needs_pruning = true;
+    }
+
+    if args.uncontract_general {
+        manip::uncontract_general(&mut basis_dict);
+        needs_pruning = true;
+    }
+
+    if args.uncontract_spdf {
+        manip::uncontract_spdf(&mut basis_dict, 0);
+        needs_pruning = true;
+    }
+
     if args.make_general {
         manip::make_general(&mut basis_dict, false);
         needs_pruning = true;

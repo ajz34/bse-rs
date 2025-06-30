@@ -114,7 +114,7 @@ pub fn prune_basis(basis: &mut BseBasis) {
 
         // Prune each shell
         for shell in shells.iter_mut() {
-            prune_shell(shell);
+            *shell = prune_shell(shell);
         }
 
         // Remove duplicates
@@ -207,6 +207,42 @@ pub fn uncontract_general(basis: &mut BseBasis) {
                     new_shell.coefficients = vec![coeff.clone()];
                     new_shells.push(new_shell);
                 }
+            }
+        }
+
+        *electron_shells = new_shells;
+    }
+}
+
+/// Removes the segmented contractions from a basis set
+///
+/// This implicitly removes general contractions as well,
+/// but will leave sp, spd, ... orbitals alone
+///
+/// The input basis set is modified directly.
+/// The resulting basis may have functions with coefficients of zero
+/// and may have duplicate shells.
+pub fn uncontract_segmented(basis: &mut BseBasis) {
+    for (_, el) in basis.elements.iter_mut() {
+        let Some(electron_shells) = &mut el.electron_shells else {
+            continue;
+        };
+
+        let mut new_shells = Vec::new();
+
+        for shell in electron_shells.iter() {
+            let exponents = &shell.exponents;
+            let nam = shell.angular_momentum.len();
+
+            for exponent in exponents.iter() {
+                let mut new_shell = shell.clone();
+                new_shell.exponents = vec![exponent.clone()];
+                new_shell.coefficients = vec![vec!["1.00000000E+00".to_string(); nam]];
+
+                // Transpose the coefficients
+                new_shell.coefficients = misc::transpose_matrix(&new_shell.coefficients);
+
+                new_shells.push(new_shell);
             }
         }
 
@@ -408,5 +444,24 @@ pub fn optimize_general(basis: &mut BseBasis) {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_prune_shell() {
+        let shell = BseElectronShell {
+            function_type: "gto".to_string(),
+            region: "1".to_string(),
+            angular_momentum: vec![0, 1],
+            exponents: vec!["1.0".to_string(), "2.0".to_string(), "3.0".to_string()],
+            coefficients: vec![vec!["0.2".to_string(), "0.5".to_string(), "0.0".to_string()]],
+        };
+        let pruned_shell = prune_shell(&shell);
+        assert_eq!(pruned_shell.exponents, vec!["1.0".to_string(), "2.0".to_string()]);
+        assert_eq!(pruned_shell.coefficients, vec![vec!["0.2".to_string(), "0.5".to_string()]]);
     }
 }
