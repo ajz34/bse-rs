@@ -7,35 +7,16 @@ import os
 out_root = "get_basis_json"
 os.makedirs(out_root, exist_ok=True)
 
-# ### naive
-
 cfgs = [
-    ("cc-pVTZ", "1, 6-O"),
-    ("def2-TZVPD", "1-3, 49-51"),
+    ("naive"                 , "cc-pVTZ"    , {"elements": "1, 6-O"    ,}),
+    ("naive"                 , "def2-TZVPD" , {"elements": "1-3, 49-51",}),
+    ("remove_free_primitives", "cc-pVTZ"    , {"elements": "1, 6-O"    , "remove_free_primitives": True}),
+    ("remove_free_primitives", "def2-TZVPD" , {"elements": "1-3, 49-51", "remove_free_primitives": True}),
+    ("make_general"          , "aug-cc-pVTZ", {"elements": "1, 6-O"    , "make_general": True}),
 ]
 
-for (basis, elements) in cfgs:
-    with open(f"{out_root}/{basis}.json", "w") as f:
-        json.dump(bse.get_basis(basis, elements=elements), f, indent=2)
-
-# ### remove_free_primitives
-
-for (basis, elements) in cfgs:
-    with open(f"{out_root}/{basis}-remove_free_primitives.json", "w") as f:
-        json.dump(bse.get_basis(basis, elements=elements, remove_free_primitives=True), f, indent=2)
-
-# ### make_general
-
-cfgs = [
-    ("aug-cc-pVTZ", "1, 6-O"),
-]
-
-for (basis, elements) in cfgs:
-    with open(f"{out_root}/{basis}-make_general.json", "w") as f:
-        json.dump(bse.get_basis(basis, elements=elements, make_general=True), f, indent=2)
-
-
-
-
+for (scene, basis, kwargs) in cfgs:
+    with open(f"{out_root}/{basis}-{scene}.json", "w") as f:
+        json.dump(bse.get_basis(basis, **kwargs), f, indent=2)
 
 

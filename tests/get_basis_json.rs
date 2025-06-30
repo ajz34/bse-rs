@@ -8,57 +8,17 @@ mod test {
     use super::*;
 
     #[rstest]
-    #[case("cc-pVTZ", "1, 6-O")]
-    #[case("def2-TZVPD", "1-3, 49-51")]
-    fn test_get_basis_json(#[case] basis: &str, #[case] elements: &str) {
+    #[case("naive"                 , "cc-pVTZ"    , ["elements = '1, 6-O'"    ,                                ].join("\n"))]
+    #[case("naive"                 , "def2-TZVPD" , ["elements = '1-3, 49-51'",                                ].join("\n"))]
+    #[case("remove_free_primitives", "cc-pVTZ"    , ["elements = '1, 6-O'"    , "remove_free_primitives = true"].join("\n"))]
+    #[case("remove_free_primitives", "def2-TZVPD" , ["elements = '1-3, 49-51'", "remove_free_primitives = true"].join("\n"))]
+    #[case("make_general"          , "aug-cc-pVTZ", ["elements = '1, 6-O'"    , "make_general = true"          ].join("\n"))]
+    fn test_get_basis_json(#[case] scene: &str, #[case] basis: &str, #[case] args: String) {
         let manifest_dir = env!("CARGO_MANIFEST_DIR");
-        let ref_file = format!("{manifest_dir}/tests/python_ref/get_basis_json/{basis}.json");
+        let ref_file = format!("{manifest_dir}/tests/python_ref/get_basis_json/{basis}-{scene}.json");
         let write_file = format!("{manifest_dir}/tests/tmp.json");
 
-        let args = BseGetBasisArgs { elements: elements.to_string().into(), ..Default::default() };
-        let basis = get_basis(basis, args);
-
-        let basis_str = serde_json::to_string_pretty(&basis).unwrap();
-        let basis_json = serde_json::from_str::<serde_json::Value>(&basis_str).unwrap();
-        write_from_string(&write_file, &basis_str).unwrap();
-
-        let ref_str = read_to_string(ref_file).unwrap();
-        let ref_json = serde_json::from_str::<serde_json::Value>(&ref_str).unwrap();
-        assert_json_include!(actual: basis_json, expected: ref_json);
-    }
-
-    #[rstest]
-    #[case("cc-pVTZ", "1, 6-O")]
-    #[case("def2-TZVPD", "1-3, 49-51")]
-    fn test_get_basis_json_remove_free_primitives(#[case] basis: &str, #[case] elements: &str) {
-        let manifest_dir = env!("CARGO_MANIFEST_DIR");
-        let ref_file = format!("{manifest_dir}/tests/python_ref/get_basis_json/{basis}-remove_free_primitives.json");
-        let write_file = format!("{manifest_dir}/tests/tmp.json");
-
-        let args = BseGetBasisArgs {
-            elements: elements.to_string().into(),
-            remove_free_primitives: true,
-            ..Default::default()
-        };
-        let basis = get_basis(basis, args);
-
-        let basis_str = serde_json::to_string_pretty(&basis).unwrap();
-        let basis_json = serde_json::from_str::<serde_json::Value>(&basis_str).unwrap();
-        write_from_string(&write_file, &basis_str).unwrap();
-
-        let ref_str = read_to_string(ref_file).unwrap();
-        let ref_json = serde_json::from_str::<serde_json::Value>(&ref_str).unwrap();
-        assert_json_include!(actual: basis_json, expected: ref_json);
-    }
-
-    #[rstest]
-    #[case("aug-cc-pVTZ", "1, 6-O")]
-    fn test_get_basis_json_make_general(#[case] basis: &str, #[case] elements: &str) {
-        let manifest_dir = env!("CARGO_MANIFEST_DIR");
-        let ref_file = format!("{manifest_dir}/tests/python_ref/get_basis_json/{basis}-make_general.json");
-        let write_file = format!("{manifest_dir}/tests/tmp.json");
-
-        let args = BseGetBasisArgs { elements: elements.to_string().into(), make_general: true, ..Default::default() };
+        let args = toml::from_str::<BseGetBasisArgs>(&args).unwrap();
         let basis = get_basis(basis, args);
 
         let basis_str = serde_json::to_string_pretty(&basis).unwrap();
