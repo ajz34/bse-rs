@@ -24,11 +24,15 @@ for (basis, elements) in cfgs:
     with open(f"{out_root}/{basis}-remove_free_primitives.json", "w") as f:
         json.dump(bse.get_basis(basis, elements=elements, remove_free_primitives=True), f, indent=2)
 
+# ### make_general
 
+cfgs = [
+    ("aug-cc-pVTZ", "1, 6-O"),
+]
 
-
-
-
+for (basis, elements) in cfgs:
+    with open(f"{out_root}/{basis}-make_general.json", "w") as f:
+        json.dump(bse.get_basis(basis, elements=elements, make_general=True), f, indent=2)
 
 
 

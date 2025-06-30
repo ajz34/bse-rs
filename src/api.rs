@@ -234,8 +234,13 @@ pub fn get_basis_f(name: &str, args: BseGetBasisArgs) -> Result<BseBasis, BseErr
         needs_pruning = true;
     }
 
+    if args.make_general {
+        manip::make_general(&mut basis_dict, false);
+        needs_pruning = true;
+    }
+
     if needs_pruning {
-        // TODO: prune_basis
+        manip::prune_basis(&mut basis_dict);
     }
 
     Ok(basis_dict)
