@@ -2,6 +2,7 @@
 
 pub mod cp2k;
 pub mod dalton;
+pub mod demon2k;
 pub mod g94;
 pub mod gamess_us;
 pub mod molcas;
