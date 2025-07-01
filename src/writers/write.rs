@@ -42,13 +42,6 @@ fn writer_map(fmt: &str) -> Option<Writer> {
             valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
             function: writers::g94::write_psi4,
         }),
-        "xtron" => Some(Writer {
-            display: "xTron",
-            extension: ".gbs",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::g94::write_xtron,
-        }),
         "molcas" => Some(Writer {
             display: "Molcas",
             extension: ".molcas",
@@ -63,6 +56,20 @@ fn writer_map(fmt: &str) -> Option<Writer> {
             valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
             function: writers::qchem::write_qchem,
         }),
+        "orca" => Some(Writer {
+            display: "ORCA",
+            extension: ".orca",
+            comment: "!",
+            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+            function: writers::orca::write_orca,
+        }),
+        "dalton" => Some(Writer {
+            display: "Dalton",
+            extension: ".dalton",
+            comment: "!",
+            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+            function: writers::dalton::write_dalton,
+        }),
         "gamess_us" => Some(Writer {
             display: "GAMESS US",
             extension: ".bas",
@@ -70,12 +77,12 @@ fn writer_map(fmt: &str) -> Option<Writer> {
             valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
             function: writers::gamess_us::write_gamess_us,
         }),
-        "orca" => Some(Writer {
-            display: "ORCA",
-            extension: ".orca",
+        "xtron" => Some(Writer {
+            display: "xTron",
+            extension: ".gbs",
             comment: "!",
             valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::orca::write_orca,
+            function: writers::g94::write_xtron,
         }),
         _ => None,
     }

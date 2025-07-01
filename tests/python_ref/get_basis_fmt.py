@@ -37,6 +37,9 @@ cfgs = [
     ("orca"          , "cc-pVTZ"    , {"elements": "1, 6-O"    , "fmt": "orca"}),
     ("orca"          , "def2-ECP"   , {"elements": "49-51"     , "fmt": "orca"}),
     ("orca"          , "def2-TZVPD" , {"elements": "1-3, 49-51", "fmt": "orca"}),
+    ("dalton"        , "cc-pVTZ"    , {"elements": "1, 6-O"    , "fmt": "dalton"}),
+    ("dalton"        , "def2-ECP"   , {"elements": "49-51"     , "fmt": "dalton"}),
+    ("dalton"        , "def2-TZVPD" , {"elements": "1-3, 49-51", "fmt": "dalton"}),
 ]
 
 # # %%time
