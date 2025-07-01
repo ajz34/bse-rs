@@ -52,6 +52,9 @@ cfgs = [
     ("demon2k"       , "cc-pVTZ"    , {"elements": "1, 6-O"    , "fmt": "demon2k"}),
     ("demon2k"       , "def2-ECP"   , {"elements": "49-51"     , "fmt": "demon2k"}),
     ("demon2k"       , "def2-TZVPD" , {"elements": "1-3, 49-51", "fmt": "demon2k"}),
+    ("turbomole"     , "cc-pVTZ"    , {"elements": "1, 6-O"    , "fmt": "turbomole"}),
+    ("turbomole"     , "def2-ECP"   , {"elements": "49-51"     , "fmt": "turbomole"}),
+    ("turbomole"     , "def2-TZVPD" , {"elements": "1-3, 49-51", "fmt": "turbomole"}),
 ]
 
 # # %%time

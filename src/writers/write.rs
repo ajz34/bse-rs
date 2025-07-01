@@ -105,6 +105,13 @@ fn writer_map(fmt: &str) -> Option<Writer> {
             valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
             function: writers::gamess_us::write_gamess_us,
         }),
+        "turbomole" => Some(Writer {
+            display: "Turbomole",
+            extension: ".tm",
+            comment: "#",
+            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+            function: writers::turbomole::write_turbomole,
+        }),
         "xtron" => Some(Writer {
             display: "xTron",
             extension: ".gbs",

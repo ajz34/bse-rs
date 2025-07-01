@@ -11,5 +11,6 @@ pub mod orca;
 pub mod pqs;
 pub mod qchem;
 pub mod qcschema;
+pub mod turbomole;
 
 pub mod write;
