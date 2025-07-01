@@ -83,6 +83,9 @@ mod test {
     #[case("gamess_uk"     , "cc-pVTZ"   , ["elements = '1, 6-O'"    ].join("\n"))]
     #[case("gamess_uk"     , "def2-ECP"  , ["elements = '49-51'"     ].join("\n"))]
     #[case("gamess_uk"     , "def2-TZVPD", ["elements = '1-3, 49-51'"].join("\n"))]
+    #[case("molpro"        , "cc-pVTZ"   , ["elements = '1, 6-O'"    ].join("\n"))]
+    #[case("molpro"        , "def2-ECP"  , ["elements = '49-51'"     ].join("\n"))]
+    #[case("molpro"        , "def2-TZVPD", ["elements = '1-3, 49-51'"].join("\n"))]
     fn test_get_formatted_basis(#[case] fmt: &str, #[case] basis: &str, #[case] args: String) {
         let manifest_dir = env!("CARGO_MANIFEST_DIR");
         let ref_file = format!("{manifest_dir}/tests/python_ref/get_basis_fmt/{basis}-{fmt}.txt");

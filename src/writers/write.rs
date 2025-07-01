@@ -119,6 +119,13 @@ fn writer_map(fmt: &str) -> Option<Writer> {
             valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
             function: writers::gamess_uk::write_gamess_uk,
         }),
+        "molpro" => Some(Writer {
+            display: "Molpro",
+            extension: ".mpro",
+            comment: "!",
+            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+            function: writers::molpro::write_molpro,
+        }),
         "xtron" => Some(Writer {
             display: "xTron",
             extension: ".gbs",

@@ -47,7 +47,7 @@ pub fn write_turbomole(basis: &BseBasis) -> String {
                 let nprim = exponents.len();
 
                 let am = &shell.angular_momentum;
-                let amchar = lut::amint_to_char(am, HIJ);
+                let amchar = lut::amint_to_char(am, HIK);
                 s.push(format!("    {nprim}   {amchar}"));
 
                 let point_places = (1..=ncol).map(|i| 8 * i + 15 * (i - 1)).collect_vec();
@@ -70,7 +70,7 @@ pub fn write_turbomole(basis: &BseBasis) -> String {
 
             let ecp_potentials = data.ecp_potentials.as_ref().unwrap();
             let max_ecp_am = ecp_potentials.iter().map(|x| x.angular_momentum[0]).max().unwrap();
-            let max_ecp_amchar = lut::amint_to_char(&[max_ecp_am], HIJ);
+            let max_ecp_amchar = lut::amint_to_char(&[max_ecp_am], HIK);
 
             // Sort lowest->highest, then put the highest at the beginning
             let mut ecp_list =
@@ -86,7 +86,7 @@ pub fn write_turbomole(basis: &BseBasis) -> String {
                 let coefficients = &pot.coefficients;
 
                 let am = &pot.angular_momentum;
-                let amchar = lut::amint_to_char(am, HIJ);
+                let amchar = lut::amint_to_char(am, HIK);
 
                 if am[0] == max_ecp_am {
                     s.push(amchar.to_string());

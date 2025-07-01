@@ -219,6 +219,19 @@ pub fn transform_basis_name(name: &str) -> String {
     transformed
 }
 
+/// Find the range in a list of coefficients where the coefficient is nonzero
+pub fn find_range(coeffs: &[String]) -> (usize, usize) {
+    let non_zero: Vec<bool> = coeffs.iter().map(|x| x.parse::<f64>().unwrap() != 0.0).collect();
+
+    // Find first non-zero index
+    let first = non_zero.iter().position(|&x| x).unwrap();
+
+    // Find last non-zero index
+    let last = non_zero.iter().rposition(|&x| x).unwrap();
+
+    (first, last)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

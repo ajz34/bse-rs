@@ -7,6 +7,7 @@ pub mod g94;
 pub mod gamess_uk;
 pub mod gamess_us;
 pub mod molcas;
+pub mod molpro;
 pub mod nwchem;
 pub mod orca;
 pub mod pqs;
