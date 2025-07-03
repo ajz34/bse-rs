@@ -16,6 +16,7 @@ mod tests {
     #[case("gaussian94"    , "gaussian94"    , "def2-TZVP" , ["elements = '1-3, 49-51'"].join("\n"))]
     #[case("turbomole"     , "turbomole"     , "cc-pVTZ"   , ["elements = '1, 6-O'"    ].join("\n"))]
     #[case("turbomole"     , "turbomole"     , "def2-TZVP" , ["elements = '1-3, 49-51'"].join("\n"))]
+    #[case("dalton"        , "dalton"        , "cc-pVTZ"   , ["elements = '1, 6-O'"    ].join("\n"))]
     fn test_get_basis(#[case] scene: &str, #[case] dump_fmt: &str, #[case] basis: &str, #[case] args: String) {
         let manifest_dir = env!("CARGO_MANIFEST_DIR");
         let ref_file = format!("{manifest_dir}/tests/python_ref/read_basis_fmt/{basis}-{scene}.json");

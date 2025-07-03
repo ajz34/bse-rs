@@ -3,6 +3,7 @@
 pub mod helpers;
 pub mod read;
 
+pub mod dalton;
 pub mod g94;
 pub mod nwchem;
 pub mod turbomole;

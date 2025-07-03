@@ -18,6 +18,7 @@ fn reader_map(fmt: &str) -> Option<Reader> {
         "turbomole" => {
             Some(Reader { display: "Turbomole", extension: ".tm", function: readers::turbomole::read_turbomole })
         },
+        "dalton" => Some(Reader { display: "Dalton", extension: ".mol", function: readers::dalton::read_dalton }),
         _ => None,
     }
 }

@@ -19,6 +19,9 @@ cfgs = [
     ("turbomole"     , "cc-pVTZ"    , {"elements": "1, 6-O"    , "fmt": "turbomole"}),
   # ("turbomole"     , "def2-ECP"   , {"elements": "49-51"     , "fmt": "turbomole"}),
     ("turbomole"     , "def2-TZVP"  , {"elements": "1-3, 49-51", "fmt": "turbomole"}),
+    ("dalton"        , "cc-pVTZ"    , {"elements": "1, 6-O"    , "fmt": "dalton"}),
+  # ("dalton"        , "def2-ECP"   , {"elements": "49-51"     , "fmt": "dalton"}),
+  # ("dalton"        , "def2-TZVP"  , {"elements": "1-3, 49-51", "fmt": "dalton"}),
 ]
 
 # # %%time
