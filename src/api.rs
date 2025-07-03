@@ -190,6 +190,65 @@ impl Default for BseGetBasisArgs {
     }
 }
 
+/// Obtain a basis set.
+///
+/// This is the main function for getting basis set information.
+/// This function reads in all the basis data and returns it either
+/// as a string or as a serde Value (JSON-like structure).
+///
+/// If you are looking for a specific format (like output nwchem, gaussian94,
+/// etc.), use [`get_formatted_basis`] instead.
+///
+/// # Arguments
+/// * `name` - Name of the basis set (case insensitive)
+/// * `elements` - List of elements to get the basis set for. Elements can be
+///   specified by:
+///   - Atomic number (as integer or string)
+///   - Element symbol (case insensitive)
+///   - Can be a range string like "1-3,7-10" which will be expanded
+///   - If empty/None, returns all elements the basis set is defined for
+/// * `version` - Optional specific version of the basis set (defaults to
+///   latest)
+/// * `uncontract_general` - Remove general contractions by duplicating
+///   primitives
+/// * `uncontract_spdf` - Remove combined angular momentum contractions (sp, spd
+///   etc)
+/// * `uncontract_segmented` - Remove segmented contractions (each primitive
+///   becomes new shell)
+/// * `make_general` - Make basis set as generally-contracted as possible (one
+///   shell per am)
+/// * `optimize_general` - Optimize by removing general contractions with
+///   uncontracted functions
+/// * `augment_diffuse` - Add n diffuse functions via even-tempered
+///   extrapolation
+/// * `augment_steep` - Add n steep functions via even-tempered extrapolation
+/// * `get_aux` - Which auxiliary basis to return:
+///   - 0: Orbital basis (default)
+///   - 1: AutoAux basis
+///   - 2: Auto-ABS Coulomb fitting basis
+/// * `data_dir` - Alternative data directory (defaults to project's "data"
+///   subdirectory)
+///
+/// # Examples
+/// ```
+/// use bse::prelude::*;
+/// let args = BseGetBasisArgsBuilder::default().elements("H, 6-O".to_string()).build().unwrap();
+/// let basis: BseBasis = get_basis_f("sto-3g", args).expect("Failed to get basis set");
+/// println!("Basis set: {basis:#?}");
+/// ```
+///
+/// Arguments can also be parsed by `toml`:
+/// ```
+/// use bse::prelude::*;
+/// let args = r#"
+///     elements = "H, 6-O"
+///     augment_diffuse = 1
+///     get_aux = 1
+/// "#;
+/// let args: BseGetBasisArgs = toml::from_str(args).unwrap();
+/// let basis: BseBasis = get_basis_f("sto-3g", args).unwrap();
+/// println!("Basis set: {basis:#?}");
+/// ```
 pub fn get_basis(name: &str, args: BseGetBasisArgs) -> BseBasis {
     get_basis_f(name, args).unwrap()
 }
@@ -316,6 +375,22 @@ pub fn get_basis_f(name: &str, args: BseGetBasisArgs) -> Result<BseBasis, BseErr
     Ok(basis_dict)
 }
 
+/// Obtain a formatted basis set.
+///
+/// If you are looking for dumping dictionary-like structure, use
+/// [`get_basis`] instead.
+///
+/// Usage is similar to [`get_basis`], but with an additional `fmt` argument.
+///
+/// # Arguments
+///
+/// * `name` - Name of the basis set (case insensitive)
+/// * `fmt` - Desired output format (case insensitive). None returns a serde
+///   Value. Example formats: nwchem, gaussian94, turbomole, etc.
+/// * `args` - Arguments for the basis set, see [`BseGetBasisArgs`]. Additional
+///   to [`get_basis`],
+///   - `header` - Whether to include a header with information about the basis
+///     set.
 pub fn get_formatted_basis(name: &str, fmt: &str, args: BseGetBasisArgs) -> String {
     get_formatted_basis_f(name, fmt, args).unwrap()
 }
@@ -334,15 +409,26 @@ mod tests {
 
     #[test]
     fn test_get_basis() {
-        let data_dir = get_bse_data_dir().expect("Data directory not found");
-        let args = BseGetBasisArgsBuilder::default().data_dir(Some(data_dir.clone())).build().unwrap();
-        let basis = get_basis_f("sto-3g", args).expect("Failed to get basis set");
+        let args = BseGetBasisArgsBuilder::default().elements("H, 6-O".to_string()).build().unwrap();
+        let basis: BseBasis = get_basis_f("sto-3g", args).unwrap();
+        println!("Basis set: {basis:#?}");
         assert_eq!(basis.name, "STO-3G");
-        let basis_json = serde_json::to_string_pretty(&basis).expect("Failed to serialize basis set to JSON");
-        println!("Basis set JSON: {basis_json}");
 
         let header = header_string(&basis);
         println!("Header:\n{header}");
+    }
+
+    #[test]
+    fn test_get_basis_toml() {
+        let args = r#"
+            elements = "H, 6-O"
+            augment_diffuse = 1
+            get_aux = 1
+            header = true
+        "#;
+        let args: BseGetBasisArgs = toml::from_str(args).unwrap();
+        let basis: BseBasis = get_basis_f("sto-3g", args).unwrap();
+        println!("Basis set: {basis:#?}");
     }
 
     #[test]
