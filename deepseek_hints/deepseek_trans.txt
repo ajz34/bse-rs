@@ -1,0 +1,159 @@
+Now I want you to perform code transformation from python to rust.
+
+Note that in python, the code structure is in dictionary; while in rust, the type should be explicitly in struct.
+
+The essential structs are provided as:
+
+```rust
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BseBasis {
+    pub molssi_bse_schema: BseMolssiBseSchema,
+    pub revision_description: String,
+    pub revision_date: String,
+    #[serde(serialize_with = "ordered_i32_map")]
+    pub elements: HashMap<String, BseBasisElement>,
+    pub version: String,
+    pub function_types: Vec<String>,
+    pub names: Vec<String>,
+    pub tags: Vec<String>,
+    pub family: String,
+    pub description: String,
+    pub role: String,
+    #[serde(serialize_with = "ordered_map")]
+    pub auxiliaries: HashMap<String, BseAuxiliary>,
+    pub name: String,
+}
+
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct BseBasisElement {
+    pub references: Vec<BseBasisReference>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub electron_shells: Option<Vec<BseElectronShell>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ecp_potentials: Option<Vec<BseEcpPotential>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ecp_electrons: Option<i32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BseElectronShell {
+    pub function_type: String,
+    pub region: String,
+    pub angular_momentum: Vec<i32>,
+    pub exponents: Vec<String>,
+    pub coefficients: Vec<Vec<String>>,
+}
+```
+
+Additional notes for transformation:
+- The python function argument `basis` is dictionary, while in rust it is `BseBasis`;
+- In rust implementation, we always use `use_copy = False`. So, for example, if the python function has signature
+    ```python
+    def uncontract_spdf(basis, max_am=0, use_copy=True):
+    ```
+    then the function signature in rust should be
+    ```rust
+    pub fn some_transformed_func(basis: &mut BseBasis, max_am: i32) {...}
+    ```
+
+------
+
+The task for transformation of python code is:
+
+```python
+def make_general(basis, skip_spdf=False, use_copy=True):
+    """
+    Makes one large general contraction for each angular momentum
+
+    If use_copy is True, the input basis set is not modified.
+
+    The output of this function is not pretty. If you want to make it nicer,
+    use sort_basis afterwards.
+    """
+
+    zero = '0.00000000'
+
+    if use_copy:
+        basis = copy.deepcopy(basis)
+
+    if not skip_spdf:
+        basis = uncontract_spdf(basis, 0, False)
+
+    for k, el in basis['elements'].items():
+        if 'electron_shells' not in el:
+            continue
+
+        newshells = []
+
+        # See what we have
+        all_am = []
+        for sh in el['electron_shells']:
+            am = sh['angular_momentum']
+
+            # Skip sp shells
+            if len(am) > 1:
+                newshells.append(sh)
+                continue
+
+            if am not in all_am:
+                all_am.append(am)
+
+        all_am = sorted(all_am)
+
+        for am in all_am:
+            newsh = {
+                'angular_momentum': am,
+                'exponents': [],
+                'coefficients': [],
+                'region': '',
+                'function_type': None,
+            }
+
+            # Do exponents first
+            for sh in el['electron_shells']:
+                if sh['angular_momentum'] == am:
+                    newsh['exponents'].extend(sh['exponents'])
+
+            # Number of primitives in the new shell
+            nprim = len(newsh['exponents'])
+
+            cur_prim = 0
+            for sh in el['electron_shells']:
+                if sh['angular_momentum'] != am:
+                    continue
+
+                if newsh['function_type'] is None:
+                    newsh['function_type'] = sh['function_type']
+
+                # Make sure the shells we are merging have the same function types
+                ft1 = newsh['function_type']
+                ft2 = sh['function_type']
+
+                # Check if one function type is the subset of another
+                # (should handle gto/gto_spherical, etc)
+                if ft1 not in ft2 and ft2 not in ft1:
+                    raise RuntimeError("Cannot make general contraction of different function types")
+
+                ngen = len(sh['coefficients'])
+
+                for g in range(ngen):
+                    coef = [zero] * cur_prim
+                    coef.extend(sh['coefficients'][g])
+                    coef.extend([zero] * (nprim - len(coef)))
+                    newsh['coefficients'].append(coef)
+
+                cur_prim += len(sh['exponents'])
+
+            newshells.append(newsh)
+
+        el['electron_shells'] = newshells
+
+    # If the basis was read in from a segmented format, it will have
+    # duplicate primitives, and so a pruning is necessary
+    prune_basis(basis, False)
+
+    return basis
+```
+
+The function [`uncontract_spdf`, `prune_basis`] has been provided in other places.

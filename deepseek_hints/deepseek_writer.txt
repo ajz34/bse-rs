@@ -1,0 +1,337 @@
+Now I want you to perform code transformation from python to rust.
+
+Note that in python, the code structure is in dictionary; while in rust, the type should be explicitly in struct.
+
+The essential structs are provided as:
+
+```rust
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BseBasis {
+    pub molssi_bse_schema: BseMolssiBseSchema,
+    pub revision_description: String,
+    pub revision_date: String,
+    #[serde(serialize_with = "ordered_i32_map")]
+    pub elements: HashMap<String, BseBasisElement>,
+    pub version: String,
+    pub function_types: Vec<String>,
+    pub names: Vec<String>,
+    pub tags: Vec<String>,
+    pub family: String,
+    pub description: String,
+    pub role: String,
+    #[serde(serialize_with = "ordered_map")]
+    pub auxiliaries: HashMap<String, BseAuxiliary>,
+    pub name: String,
+}
+
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct BseBasisElement {
+    pub references: Vec<BseBasisReference>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub electron_shells: Option<Vec<BseElectronShell>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ecp_potentials: Option<Vec<BseEcpPotential>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ecp_electrons: Option<i32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BseElectronShell {
+    pub function_type: String,
+    pub region: String,
+    pub angular_momentum: Vec<i32>,
+    pub exponents: Vec<String>,
+    pub coefficients: Vec<Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BseEcpPotential {
+    pub angular_momentum: Vec<i32>,
+    pub coefficients: Vec<Vec<String>>,
+    pub ecp_type: String,
+    pub r_exponents: Vec<i32>,
+    pub gaussian_exponents: Vec<String>,
+}
+```
+
+Additional notes for transformation:
+- The python function argument `basis` is dictionary, while in rust it is `BseBasis`;
+- Many functions that has already implemented elsewhere, such as module `lut`, `manip`, `sort`, etc. If you found some functions that you don't know, leave as is and I will handle that.
+- We suggest to use `Vec<String>` to store results first, then use `s.join("\n") + "\n"` to finalize. Efficiency is not of concern. However, the original python code may often have `\n` to be pushed into result; if using vector of strings, the `\n` trailer is not needed.
+- Some boolean flags are already imported from `crate::prelude`, and suggested use them:
+    ```rust
+    pub const HIK: bool = false;
+    pub const HIJ: bool = true;
+
+    pub const INCOMPACT: bool = false;
+    pub const COMPACT: bool = true;
+
+    pub const SCIFMT_E: bool = false;
+    pub const SCIFMT_D: bool = true;
+    ```
+- For string formatters, it is adviced to apply `clippy::uninlined_format_args`:
+    ```rust
+    // not recommended
+    format!("{}", var);
+    // recommended
+    format!("{var}");
+    ```
+- Before sort_basis, you are adviced to manually call `manip::prune_basis`. This is something different with python's implementation.
+
+------
+
+Example transformation is NWChem writer:
+
+```python
+from .. import lut, manip, printing, misc, sort
+
+
+def write_nwchem(basis):
+    '''Converts a basis set to NWChem format
+    '''
+
+    # Uncontract all but SP
+    basis = manip.uncontract_spdf(basis, 1, True)
+    basis = sort.sort_basis(basis, False)
+
+    s = ''
+
+    # Elements for which we have electron basis
+    electron_elements = [k for k, v in basis['elements'].items() if 'electron_shells' in v]
+
+    # Elements for which we have ECP
+    ecp_elements = [k for k, v in basis['elements'].items() if 'ecp_potentials' in v]
+
+    if electron_elements:
+        # Angular momentum type
+        types = basis['function_types']
+        harm_type = 'cartesian' if 'gto_cartesian' in types else 'spherical'
+
+        # basis set starts with a string
+        s += 'BASIS "ao basis" {} PRINT\n'.format(harm_type.upper())
+
+        # Electron Basis
+        for z in electron_elements:
+            data = basis['elements'][z]
+            sym = lut.element_sym_from_Z(z, True)
+            s += '#BASIS SET: {}\n'.format(misc.contraction_string(data))
+
+            for shell in data['electron_shells']:
+                exponents = shell['exponents']
+                coefficients = shell['coefficients']
+                ncol = len(coefficients) + 1
+
+                am = shell['angular_momentum']
+                amchar = lut.amint_to_char(am).upper()
+                s += '{}    {}\n'.format(sym, amchar)
+
+                point_places = [8 * i + 15 * (i - 1) for i in range(1, ncol + 1)]
+                s += printing.write_matrix([exponents, *coefficients], point_places)
+
+        s += 'END\n'
+
+    # Write out ECP
+    if ecp_elements:
+        s += '\n\nECP\n'
+
+        for z in ecp_elements:
+            data = basis['elements'][z]
+            sym = lut.element_sym_from_Z(z, True)
+            max_ecp_am = max([x['angular_momentum'][0] for x in data['ecp_potentials']])
+
+            # Sort lowest->highest, then put the highest at the beginning
+            ecp_list = sorted(data['ecp_potentials'], key=lambda x: x['angular_momentum'])
+            ecp_list.insert(0, ecp_list.pop())
+
+            s += '{} nelec {}\n'.format(sym, data['ecp_electrons'])
+
+            for pot in ecp_list:
+                rexponents = pot['r_exponents']
+                gexponents = pot['gaussian_exponents']
+                coefficients = pot['coefficients']
+
+                am = pot['angular_momentum']
+                amchar = lut.amint_to_char(am).upper()
+
+                if am[0] == max_ecp_am:
+                    s += '{} ul\n'.format(sym)
+                else:
+                    s += '{} {}\n'.format(sym, amchar)
+
+                point_places = [0, 10, 33]
+                s += printing.write_matrix([rexponents, gexponents, *coefficients], point_places)
+
+        s += 'END\n'
+
+    return s
+```
+
+Transformed code is
+
+```rust
+use crate::prelude::*;
+
+/// Converts a basis set to NWChem format.
+pub fn write_nwchem(basis: &BseBasis) -> String {
+    // Uncontract all but SP
+    let mut basis = basis.clone();
+    manip::uncontract_spdf(&mut basis, 1);
+    manip::prune_basis(&mut basis)
+    sort::sort_basis(&mut basis);
+
+    let mut s: Vec<String> = vec![];
+
+    // Elements for which we have electron basis
+    let electron_elements =
+        basis.elements.iter().filter_map(|(k, v)| v.electron_shells.as_ref().map(|_| k)).sorted().collect_vec();
+
+    // Elements for which we have ECP
+    let ecp_elements =
+        basis.elements.iter().filter_map(|(k, v)| v.ecp_potentials.as_ref().map(|_| k)).sorted().collect_vec();
+
+    if !electron_elements.is_empty() {
+        // Angular momentum type
+        let types = basis.function_types;
+        let harm_type = if types.contains(&"gto_cartesian".to_string()) { "cartesian" } else { "spherical" };
+
+        // basis set starts with a string
+        s.push(format!(r#"BASIS "ao basis" {} PRINT"#, harm_type.to_uppercase()));
+
+        // Electron Basis
+        for z in electron_elements {
+            let data = &basis.elements[z];
+            let shells = data.electron_shells.as_ref().unwrap();
+            let sym = lut::element_sym_from_Z_with_normalize(z.parse().unwrap()).unwrap();
+            s.push(format!(r#"#BASIS SET: {}"#, misc::contraction_string(shells, HIK, INCOMPACT)));
+
+            for shell in shells {
+                let exponents = &shell.exponents;
+                let coefficients = &shell.coefficients;
+                let ncol = coefficients.len() + 1;
+                let am = &shell.angular_momentum;
+                let amchar = lut::amint_to_char(am, HIK).to_uppercase();
+                s.push(format!(r#"{sym}    {amchar}"#));
+
+                let point_places = (1..=ncol).map(|i| 8 * i + 15 * (i - 1)).collect_vec();
+                let exp_coef = [vec![exponents.clone()], coefficients.clone()].concat();
+                s.push(printing::write_matrix(&exp_coef, &point_places, SCIFMT_E));
+            }
+        }
+        s.push("END".to_string());
+    }
+
+    // Write out ECP
+    if !ecp_elements.is_empty() {
+        s.push("\n\nECP".to_string());
+
+        for z in ecp_elements {
+            let data = &basis.elements[z];
+            let sym = lut::element_sym_from_Z_with_normalize(z.parse().unwrap()).unwrap();
+            let ecp_potentials = data.ecp_potentials.as_ref().unwrap();
+            let max_ecp_am = ecp_potentials.iter().map(|x| x.angular_momentum[0]).max().unwrap();
+
+            // Sort lowest->hightest, then put the highest at the beginning
+            let mut ecp_list =
+                ecp_potentials.iter().sorted_by(|a, b| a.angular_momentum.cmp(&b.angular_momentum)).collect_vec();
+            let ecp_list_last = ecp_list.pop().unwrap();
+            ecp_list.insert(0, ecp_list_last);
+
+            s.push(format!(r#"{sym} nelec {}"#, data.ecp_electrons.unwrap()));
+
+            for pot in ecp_list {
+                let rexponents = &pot.r_exponents.iter().map(|x| x.to_string()).collect_vec();
+                let gexponents = &pot.gaussian_exponents;
+                let coefficients = &pot.coefficients;
+
+                let am = &pot.angular_momentum;
+                let amchar = lut::amint_to_char(am, HIK).to_uppercase();
+
+                if am[0] == max_ecp_am {
+                    s.push(format!(r#"{sym} ul"#));
+                } else {
+                    s.push(format!(r#"{sym} {amchar}"#));
+                }
+
+                let point_places = [0, 10, 33];
+                let exp_coef = [vec![rexponents.clone(), gexponents.clone()], coefficients.clone()].concat();
+                s.push(printing::write_matrix(&exp_coef, &point_places, SCIFMT_E));
+            }
+        }
+        s.push("END".to_string());
+    }
+
+    s.join("\n") + "\n"
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_header() {
+        let args = BseGetBasisArgsBuilder::default().elements("1, 49".to_string()).build().unwrap();
+        let basis = get_basis("def2-TZVP", args);
+        let output = write_nwchem(&basis);
+        println!("{output}");
+    }
+}
+```
+
+------
+
+The task for transformation of python code is:
+
+```python
+def write_veloxchem(basis):
+    '''Converts a basis set to VeloxChem format
+    '''
+
+    s = f'@BASIS_SET {basis["name"]}\n'
+
+    basis = manip.optimize_general(basis, False)
+
+    basis = manip.uncontract_general(basis, False)
+
+    basis = manip.uncontract_spdf(basis, 0, False)
+
+    basis = manip.prune_basis(basis, False)
+
+    # Elements for which we have electron basis
+    electron_elements = [k for k, v in basis['elements'].items() if 'electron_shells' in v]
+
+    # Electron Basis
+    if electron_elements:
+        for z in electron_elements:
+            data = basis['elements'][z]
+            sym = lut.element_sym_from_Z(z, True).upper()
+            elname = lut.element_name_from_Z(z).upper()
+            cont_string = misc.contraction_string(data)
+
+            s += f'\n! {elname:s}       {cont_string:s}\n'
+            s += f'@ATOMBASIS {sym:s}\n'
+
+            for shell in data['electron_shells']:
+                exponents = shell['exponents']
+                coefficients = shell['coefficients']
+                ncol = len(coefficients) + 1
+                nprim = len(exponents)
+                ngen = len(coefficients)
+
+                am = shell['angular_momentum']
+                # use 'hij' convention, where AM=7 is j
+                amchar = lut.amint_to_char(am, hij=True)
+
+                s += f'{amchar.upper()}    {nprim:d}    {ngen:d}\n'
+
+                point_places = [2 * i + 16 * (i - 1) for i in range(1, ncol + 1)]
+                s += printing.write_matrix([exponents, *coefficients], point_places, convert_exp=False)
+
+            s += '@END\n'
+
+    md5sum = md5(s.encode('utf-8')).hexdigest()
+
+    return s + md5sum
+```
+
+This seems to involve md5 hash, and you may find a crate to perform this task.
