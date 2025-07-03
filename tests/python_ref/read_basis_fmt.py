@@ -13,6 +13,9 @@ cfgs = [
     ("nwchem"        , "cc-pVTZ"    , {"elements": "1, 6-O"    , "fmt": "nwchem"}),
     ("nwchem"        , "def2-ECP"   , {"elements": "49-51"     , "fmt": "nwchem"}),
     ("nwchem"        , "def2-TZVP"  , {"elements": "1-3, 49-51", "fmt": "nwchem"}),
+    ("gaussian94"    , "cc-pVTZ"    , {"elements": "1, 6-O"    , "fmt": "gaussian94"}),
+    ("gaussian94"    , "def2-ECP"   , {"elements": "49-51"     , "fmt": "gaussian94"}),
+    ("gaussian94"    , "def2-TZVP"  , {"elements": "1-3, 49-51", "fmt": "gaussian94"}),
 ]
 
 # # %%time

@@ -3,4 +3,5 @@
 pub mod helpers;
 pub mod read;
 
+pub mod g94;
 pub mod nwchem;

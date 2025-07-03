@@ -12,6 +12,9 @@ struct Reader {
 fn reader_map(fmt: &str) -> Option<Reader> {
     match fmt {
         "nwchem" => Some(Reader { display: "NWChem", extension: ".nw", function: readers::nwchem::read_nwchem }),
+        "gaussian94" | "g94" => {
+            Some(Reader { display: "Gaussian94", extension: ".gbs", function: readers::g94::read_g94 })
+        },
         _ => None,
     }
 }

@@ -8,6 +8,9 @@ mod tests {
     use super::*;
 
     #[rstest]
+    #[case("gaussian94"    , "gaussian94"    , "cc-pVTZ"   , ["elements = '1, 6-O'"    ].join("\n"))]
+    #[case("gaussian94"    , "gaussian94"    , "def2-ECP"  , ["elements = '49-51'"     ].join("\n"))]
+    #[case("gaussian94"    , "gaussian94"    , "def2-TZVP" , ["elements = '1-3, 49-51'"].join("\n"))]
     #[case("nwchem"        , "nwchem"        , "cc-pVTZ"   , ["elements = '1, 6-O'"    ].join("\n"))]
     #[case("nwchem"        , "nwchem"        , "def2-ECP"  , ["elements = '49-51'"     ].join("\n"))]
     #[case("nwchem"        , "nwchem"        , "def2-TZVP" , ["elements = '1-3, 49-51'"].join("\n"))]

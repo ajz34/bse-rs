@@ -7,6 +7,7 @@ pub enum BseError {
     DataError(String),
     KeyError(String),
     ValueError(String),
+    NotImplementedError(String),
     IOError(String),
     SerdeJsonError(String),
     Miscellaneous(String),

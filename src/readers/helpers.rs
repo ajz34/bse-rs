@@ -26,7 +26,7 @@ pub(crate) fn is_integer(s: &str) -> bool {
 /// Replace 'd' or 'D' with 'e' for scientific notation
 #[inline]
 pub(crate) fn replace_d(s: &str) -> String {
-    s.replace(['d', 'D'], "e")
+    s.replace('d', "e").replace('D', "E")
 }
 
 /// Creates a canonical list of AM for use with ECP potentials.
@@ -55,7 +55,7 @@ pub(crate) fn chunk_list<T: Clone>(lst: &[T], rows: usize, cols: usize) -> Resul
 ///
 /// If line does not match, or lines is empty, an exception is raised.
 #[allow(unused)]
-fn remove_expected_line(lines: &[String], expected: &str, position: isize) -> Result<Vec<String>, BseError> {
+pub(crate) fn remove_expected_line(lines: &[String], expected: &str, position: isize) -> Result<Vec<String>, BseError> {
     if lines.is_empty() {
         bse_raise!(ValueError, "No lines to test for expected line")?
     }
