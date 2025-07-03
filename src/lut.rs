@@ -140,7 +140,7 @@ pub fn amchar_to_int(amchar: &str, hij: bool) -> Option<Vec<i32>> {
         HIJ => AMCHAR_MAP_HIJ,
         HIK => AMCHAR_MAP_HIK,
     };
-    amchar.chars().map(|c| amchar_map.find(c).map(|i| i as i32)).collect()
+    amchar.to_lowercase().chars().map(|c| amchar_map.find(c).map(|i| i as i32)).collect()
 }
 
 /// Return the starting principal quantum numbers of electron shells

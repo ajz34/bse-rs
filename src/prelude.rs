@@ -4,10 +4,11 @@
 
 pub use crate::api::*;
 pub use crate::fields::{
-    BseAuxiliary, BseBasis, BseBasisElement, BseBasisReference, BseEcpElement, BseEcpPotential, BseElectronShell,
-    BseElementComponents, BseGtoElement, BseMolssiBseSchema, BseRootMetadata, BseRootMetadataVer, BseSkelComponentEcp,
-    BseSkelComponentGto, BseSkelElement, BseSkelMetadata, BseSkelTable,
+    BseAuxiliary, BseBasis, BseBasisElement, BseBasisMinimal, BseBasisReference, BseEcpElement, BseEcpPotential,
+    BseElectronShell, BseElementComponents, BseGtoElement, BseMolssiBseSchema, BseRootMetadata, BseRootMetadataVer,
+    BseSkelComponentEcp, BseSkelComponentGto, BseSkelElement, BseSkelMetadata, BseSkelTable,
 };
+pub use crate::readers::read::{read_formatted_basis_str, read_formatted_basis_str_f};
 
 // for developers
 
@@ -15,7 +16,7 @@ pub(crate) use cached::proc_macro::{cached, once};
 pub(crate) use derive_builder::{Builder, UninitializedFieldError};
 pub(crate) use duplicate::duplicate_item;
 pub(crate) use itertools::*;
-pub(crate) use regex::Regex;
+pub(crate) use regex::{Regex, RegexBuilder};
 pub(crate) use serde::de::{Unexpected, Visitor};
 pub(crate) use serde::{Deserialize, Deserializer, Serialize};
 pub(crate) use std::collections::{BTreeMap, HashMap, HashSet};

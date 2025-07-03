@@ -45,7 +45,7 @@ pub struct BseEcpElement {
 
 /* #region field for skeletons */
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct BseMolssiBseSchema {
     pub schema_type: String,
     pub schema_version: String,
@@ -134,6 +134,10 @@ pub struct BseRootMetadata {
     pub versions: HashMap<String, BseRootMetadataVer>,
 }
 
+/* #endregion */
+
+/* #region Bse high-level fields */
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseBasisReference {
     pub reference_description: String,
@@ -152,7 +156,7 @@ pub struct BseBasisElement {
     pub ecp_electrons: Option<i32>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct BseBasis {
     pub molssi_bse_schema: BseMolssiBseSchema,
     pub revision_description: String,
@@ -169,6 +173,16 @@ pub struct BseBasis {
     #[serde(serialize_with = "ordered_map")]
     pub auxiliaries: HashMap<String, BseAuxiliary>,
     pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct BseBasisMinimal {
+    pub molssi_bse_schema: BseMolssiBseSchema,
+    #[serde(serialize_with = "ordered_i32_map")]
+    pub elements: HashMap<String, BseBasisElement>,
+    pub function_types: Vec<String>,
+    pub name: String,
+    pub description: String,
 }
 
 /* #endregion */
