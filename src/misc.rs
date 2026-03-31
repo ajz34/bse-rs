@@ -1,21 +1,38 @@
-//! Miscellaneous helper functions.
-
+//! Miscellaneous helper functions and constants.
+//!
+//! This module provides utility functions for element handling, formatting,
+/// and string processing used throughout the crate.
 use crate::prelude::*;
 
 /* #region flags */
 
+/// Angular momentum character ordering flag.
+///
+/// When `false` (HIK), uses ordering: spdfghikl (skips j).
+/// When `true` (HIJ), uses ordering: spdfghijkl.
 pub const HIK: bool = false;
+
+/// Angular momentum character ordering flag (includes j).
 pub const HIJ: bool = true;
 
+/// Format flag for non-compact output.
 pub const INCOMPACT: bool = false;
+
+/// Format flag for compact output.
 pub const COMPACT: bool = true;
 
+/// Scientific notation format flag (uses 'e').
 pub const SCIFMT_E: bool = false;
+
+/// Scientific notation format flag (uses 'D' for Fortran compatibility).
 pub const SCIFMT_D: bool = true;
 
 /* #endregion */
 
-// the scientific notation of rust is not exactly the same as Python's
+/// Format a floating-point exponent in scientific notation.
+///
+/// Converts Rust's scientific notation to the format expected by BSE
+/// (e.g., "1.234567e+02" format).
 #[inline]
 pub(crate) fn format_exponent(exp: f64) -> String {
     let token = format!("{exp:.6e}");
@@ -26,7 +43,18 @@ pub(crate) fn format_exponent(exp: f64) -> String {
     format!("{s}e{sgn}{e:0>2}")
 }
 
-/// Transposes a matrix (list of lists) commonly done do coefficients.
+/// Transpose a matrix (list of lists).
+///
+/// Commonly used for converting between coefficient representations.
+///
+/// # Example
+///
+/// ```rust
+/// use bse::misc::transpose_matrix;
+/// let mat = vec![vec![1, 2], vec![3, 4]];
+/// let transposed = transpose_matrix(&mat);
+/// assert_eq!(transposed, vec![vec![1, 3], vec![2, 4]]);
+/// ```
 pub fn transpose_matrix<T>(mat: &[Vec<T>]) -> Vec<Vec<T>>
 where
     T: Clone,
@@ -41,15 +69,23 @@ where
     (0..ncol).map(|i| (0..nrow).map(|j| mat[j][i].clone()).collect()).collect()
 }
 
-/// Determine the maximum angular momentum of a list of shells or potentials.
+/// Determine the maximum angular momentum from a list of electron shells.
+///
+/// Returns the highest angular momentum value found, or 0 if no shells exist.
 pub fn max_am(electron_shells: &[BseElectronShell]) -> i32 {
     electron_shells.iter().flat_map(|sh| &sh.angular_momentum).max().cloned().unwrap_or(0)
 }
 
-/// Forms a string specifying the contractions for an element.
+/// Form a string describing the contractions for an element.
 ///
-/// i.e., (16s,10p) -> [4s,3p]
-/// or, if compact=True, 16s10p.4s3p
+/// Creates a human-readable description like "(16s,10p) -> [4s,3p]" or
+/// the compact form "16s10p.4s3p".
+///
+/// # Arguments
+///
+/// * `electron_shells` - List of electron shells
+/// * `hij` - Angular momentum character ordering (true = include j)
+/// * `compact` - Output format (true = compact, false = expanded)
 pub fn contraction_string(electron_shells: &[BseElectronShell], hij: bool, compact: bool) -> String {
     let mut cont_map: HashMap<i32, (usize, usize)> = HashMap::new();
     for sh in electron_shells {
@@ -90,9 +126,17 @@ pub fn contraction_string(electron_shells: &[BseElectronShell], hij: bool, compa
     }
 }
 
-/// Create a string (with ranges) given a list of element numbers.
+/// Create a compact string representation of element numbers.
 ///
-/// For example, [1, 2, 3, 6, 7, 8, 10] will return "H-Li,C-O,Ne".
+/// Converts a list of atomic numbers into a human-readable string with
+/// element symbols and ranges.
+///
+/// # Example
+///
+/// ```rust
+/// use bse::misc::compact_elements;
+/// assert_eq!(compact_elements(&[1, 2, 3, 6, 7, 8, 10]), "h-li,c-o,ne");
+/// ```
 pub fn compact_elements(elements: &[i32]) -> String {
     if elements.is_empty() {
         return String::new();
@@ -139,23 +183,25 @@ pub fn compact_elements(elements: &[i32]) -> String {
         .join(",")
 }
 
-/// Create a list of integers given a string or list of compacted elements.
+/// Parse an element specification string into atomic numbers.
 ///
-/// This is partly the opposite of compact_elements, but is more flexible.
+/// Accepts various formats including atomic numbers, element symbols,
+/// and ranges. Case insensitive.
 ///
-/// In all cases, element symbols (case insensitive) and Z numbers (as integers
-/// or strings) can be used interchangeably. Ranges are also allowed in both
-/// lists and strings.
+/// # Supported Formats
 ///
-/// This function will ignore brackets (`[`, `]`), quotes (`'`, `"`) and spaces.
+/// - Atomic numbers: "1, 2, 3" or just "1-3"
+/// - Element symbols: "H, He, Li"
+/// - Ranges: "H-Li", "1-3", "C-O"
+/// - Combinations: "H-N,8,Na-12"
 ///
-/// Some examples:
-/// - "H-Li,C-O,Ne" will return [1, 2, 3, 6, 7, 8, 10]
-/// - "H-N,8,Na-12" will return [1, 2, 3, 4, 5, 6, 7, 8, 11, 12]
-/// - ['C', 'Al-15,S', 17, '18'] will return [6, 13, 14, 15, 16, 17, 18]
+/// # Example
 ///
-/// If as_str is True, the list will contain strings of the integers (i.e., the
-/// first example above will return ['1', '2', '3', '6', '7', '8', '10'])
+/// ```rust
+/// use bse::misc::expand_elements;
+/// assert_eq!(expand_elements("H-Li,C-O,Ne"), vec![1, 2, 3, 6, 7, 8, 10]);
+/// assert_eq!(expand_elements("H-N,8,Na-12"), vec![1, 2, 3, 4, 5, 6, 7, 8, 11, 12]);
+/// ```
 pub fn expand_elements(compact_el: &str) -> Vec<i32> {
     expand_elements_f(compact_el).unwrap()
 }
@@ -208,10 +254,10 @@ pub fn expand_elements_f(compact_el: &str) -> Result<Vec<i32>, BseError> {
     Ok(elements)
 }
 
-/// Transforms the name of a basis set to an internal representation.
+/// Transform a basis set name to its internal representation.
 ///
-/// This makes comparison of basis set names easier by, for example, converting
-/// the name to all lower case.
+/// Converts to lowercase and replaces special characters for consistent
+/// comparison and lookup.
 pub fn transform_basis_name(name: &str) -> String {
     let mut transformed = name.to_lowercase();
     transformed = transformed.replace('/', "_sl_");
@@ -219,7 +265,9 @@ pub fn transform_basis_name(name: &str) -> String {
     transformed
 }
 
-/// Find the range in a list of coefficients where the coefficient is nonzero
+/// Find the range of non-zero coefficients in a vector.
+///
+/// Returns (first_index, last_index) of non-zero values.
 pub fn find_range(coeffs: &[String]) -> (usize, usize) {
     let non_zero: Vec<bool> = coeffs.iter().map(|x| x.parse::<f64>().unwrap() != 0.0).collect();
 

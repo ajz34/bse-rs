@@ -1,12 +1,16 @@
-//! One-center integrals for Gaussian-type and Slater-type orbitals
+//! One-center integrals for Gaussian-type and Slater-type orbitals.
+//!
+//! Provides functions for computing overlap and radial moment integrals
+//! needed for basis set manipulation and sorting.
+//!
+//! ## References
 //!
 //! Written by Susi Lehtola, 2020 (BSE original Python code)
-//!
-//! Modified for rust in this project.
 
 use crate::misc;
 use libm::{sqrt, tgamma};
 
+/// Matrix multiplication for `Vec<Vec<f64>>`.
 fn matmul(a: &[Vec<f64>], b: &[Vec<f64>]) -> Vec<Vec<f64>> {
     assert!(a[0].len() == b.len(), "Matrix dimensions do not match for multiplication.");
 
@@ -95,8 +99,16 @@ fn gto_overlap(exps: &[f64], l: i32) -> Vec<Vec<f64>> {
     overlaps
 }
 
+/// Compute the overlap matrix for contracted GTOs.
+///
 /// Computes the overlap matrix in the contracted basis, assuming the basis
-/// functions are of the spherical form $r^l \sum_i c_i exp(-z_i r^2)$.
+/// functions are of the spherical form $r^l \sum_i c_i \exp(-z_i r^2)$.
+///
+/// # Arguments
+///
+/// * `exps0` - Exponents as strings
+/// * `contr0` - Contraction coefficients as strings
+/// * `l` - Angular momentum
 pub fn gto_overlap_contr(exps0: &[String], contr0: &[Vec<String>], l: i32) -> Vec<Vec<f64>> {
     // Convert exponents and contractions to floating point
     let exps = vec_to_float(exps0);
@@ -133,9 +145,16 @@ fn gto_R(exps: &[f64], l: i32) -> Vec<Vec<f64>> {
     rmat
 }
 
-/// Computes the r matrix in the contracted basis, assuming the basis functions
-/// are of the spherical form $r^l \sum_i c_i exp(-z_i r^2)$. The function also
-/// takes care of proper normalization.
+/// Compute the <r> matrix for contracted GTOs.
+///
+/// Computes the radial moment matrix in the contracted basis with proper
+/// normalization. Used for determining spatial extent of basis functions.
+///
+/// # Arguments
+///
+/// * `exps0` - Exponents as strings
+/// * `contr0` - Contraction coefficients as strings
+/// * `l` - Angular momentum
 pub fn gto_R_contr(exps0: &[String], contr0: &[Vec<String>], l: i32) -> Vec<Vec<f64>> {
     // Convert exponents and contractions to floating point
     let exps = vec_to_float(exps0);
@@ -177,9 +196,15 @@ fn gto_Rsq(exps: &[f64], l: i32) -> Vec<Vec<f64>> {
     rsqs
 }
 
-/// Computes the r^2 matrix in the contracted basis, assuming the basis
-/// functions are of the spherical form $r^l \sum_i c_i exp(-z_i r^2)$. The
-/// function also takes care of proper normalization.
+/// Compute the <r²> matrix for contracted GTOs.
+///
+/// Used for computing spatial extent of basis functions for sorting.
+///
+/// # Arguments
+///
+/// * `exps0` - Exponents as strings
+/// * `contr0` - Contraction coefficients as strings
+/// * `l` - Angular momentum
 pub fn gto_Rsq_contr(exps0: &[String], contr0: &[Vec<String>], l: i32) -> Vec<Vec<f64>> {
     // Convert exponents and contractions to floating point
     let exps = vec_to_float(exps0);
@@ -226,8 +251,15 @@ fn sto_overlap(exps: &[f64], ns: &[i32]) -> Vec<Vec<f64>> {
     overlaps
 }
 
-/// Computes the overlap matrix in the contracted basis, assuming the basis
-/// functions are of the spherical form $r^(n-1) exp(-z r)$.
+/// Compute the overlap matrix for contracted STOs.
+///
+/// Slater-type orbitals have the form $r^{n-1} \exp(-z r)$.
+///
+/// # Arguments
+///
+/// * `exps0` - Exponents as strings
+/// * `contr0` - Contraction coefficients as strings
+/// * `ns0` - Principal quantum numbers as strings
 pub fn sto_overlap_contr(exps0: &[String], contr0: &[Vec<String>], ns0: &[String]) -> Vec<Vec<f64>> {
     // Convert exponents, contractions, and quantum numbers to floating point
     let exps = vec_to_float(exps0);
@@ -270,8 +302,15 @@ fn sto_Rsq(exps: &[f64], ns: &[i32]) -> Vec<Vec<f64>> {
     rsqs
 }
 
-/// Computes the r^2 matrix in the contracted basis, assuming the basis
-/// functions are of the spherical form $r^(n-1) exp(-z r)$.
+/// Compute the <r²> matrix for contracted STOs.
+///
+/// Slater-type orbitals have the form $r^{n-1} \exp(-z r)$.
+///
+/// # Arguments
+///
+/// * `exps0` - Exponents as strings
+/// * `contr0` - Contraction coefficients as strings
+/// * `ns0` - Principal quantum numbers as strings
 pub fn sto_Rsq_contr(exps0: &[String], contr0: &[Vec<String>], ns0: &[String]) -> Vec<Vec<f64>> {
     // Convert exponents, contractions, and quantum numbers to floating point
     let exps = vec_to_float(exps0);

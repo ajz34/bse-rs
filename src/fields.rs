@@ -1,43 +1,92 @@
-//! Field definitions.
+//! Data structures for basis set information.
+//!
+//! This module defines the core data structures used to represent basis sets,
+//! their components, and associated metadata. The structures are designed to
+//! be compatible with the JSON format used by the MolSSI Basis Set Exchange.
+//!
+//! # Main Types
+//!
+//! - [`BseBasis`] - Complete basis set with all elements and metadata
+//! - [`BseBasisElement`] - Basis data for a single element
+//! - [`BseElectronShell`] - A single electron shell (e.g., 1s, 2p)
+//! - [`BseEcpPotential`] - An ECP potential component
+//! - [`BseRootMetadata`] - Metadata for a basis set from METADATA.json
 
 use crate::prelude::*;
 
 /* #region field for components */
 
+/// Auxiliary basis set reference.
+///
+/// Represents an auxiliary basis set associated with a primary basis set.
+/// Can be either a single basis set name or a list of names.
 #[derive(Debug, Clone, PartialEq)]
 pub enum BseAuxiliary {
+    /// Single auxiliary basis set name.
     Str(String),
+    /// Multiple auxiliary basis set names.
     Vec(Vec<String>),
 }
 
+/// Electron shell data for a Gaussian-type orbital.
+///
+/// Represents a single shell in a basis set, containing the angular momentum,
+/// exponents, and contraction coefficients.
+///
+/// # Example
+///
+/// A typical s-shell might have:
+/// - `angular_momentum: [0]` (s orbital)
+/// - `exponents: ["1.234e+01", "4.567e+00"]` (two Gaussian primitives)
+/// - `coefficients: [["0.123", "0.456"]]` (one contraction)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseElectronShell {
+    /// Function type (e.g., "gto", "gto_spherical", "gto_cartesian").
     pub function_type: String,
+    /// Region identifier for the shell.
     pub region: String,
+    /// Angular momentum values. For combined shells (sp, spd), contains
+    /// multiple values.
     pub angular_momentum: Vec<i32>,
+    /// Gaussian exponents as strings.
     pub exponents: Vec<String>,
+    /// Contraction coefficients as strings. Each inner vector is one
+    /// contraction.
     pub coefficients: Vec<Vec<String>>,
 }
 
+/// GTO basis data for a single element from a component file.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseGtoElement {
+    /// Reference keys for this element's data.
     pub references: Vec<String>,
+    /// Electron shells for this element.
     pub electron_shells: Vec<BseElectronShell>,
 }
 
+/// ECP potential component for a single angular momentum.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseEcpPotential {
+    /// Angular momentum for this potential.
     pub angular_momentum: Vec<i32>,
+    /// Contraction coefficients.
     pub coefficients: Vec<Vec<String>>,
+    /// ECP type (e.g., "scalar_ecp").
     pub ecp_type: String,
+    /// R exponents for the ECP.
     pub r_exponents: Vec<i32>,
+    /// Gaussian exponents for the ECP.
     pub gaussian_exponents: Vec<String>,
 }
 
+/// ECP basis data for a single element from a component file.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseEcpElement {
+    /// Reference keys for this element's data.
     pub references: Vec<String>,
+    /// Number of electrons replaced by the ECP.
     pub ecp_electrons: i32,
+    /// ECP potentials for this element.
     pub ecp_potentials: Vec<BseEcpPotential>,
 }
 
@@ -45,61 +94,97 @@ pub struct BseEcpElement {
 
 /* #region field for skeletons */
 
+/// Schema information for MolSSI BSE JSON files.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct BseMolssiBseSchema {
+    /// Schema type (e.g., "component", "element", "table", "complete").
     pub schema_type: String,
+    /// Schema version string.
     pub schema_version: String,
 }
 
+/// GTO component file data for multiple elements.
+///
+/// Represents the contents of a component JSON file containing GTO basis
+/// data for multiple elements.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseSkelComponentGto {
+    /// Schema information.
     pub molssi_bse_schema: BseMolssiBseSchema,
+    /// Description of this component.
     pub description: String,
+    /// Data source identifier.
     pub data_source: String,
+    /// Element data indexed by atomic number string.
     #[serde(serialize_with = "ordered_i32_map")]
     pub elements: HashMap<String, BseGtoElement>,
 }
 
+/// ECP component file data for multiple elements.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseSkelComponentEcp {
+    /// Schema information.
     pub molssi_bse_schema: BseMolssiBseSchema,
+    /// Description of this component.
     pub description: String,
+    /// Data source identifier.
     pub data_source: String,
+    /// Element data indexed by atomic number string.
     #[serde(serialize_with = "ordered_i32_map")]
     pub elements: HashMap<String, BseEcpElement>,
 }
 
+/// Component references for a single element.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseElementComponents {
+    /// List of component file paths.
     pub components: Vec<String>,
 }
 
+/// Element file data mapping elements to their components.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseSkelElement {
+    /// Schema information.
     pub molssi_bse_schema: BseMolssiBseSchema,
+    /// Name of this element basis.
     pub name: String,
+    /// Description.
     pub description: String,
+    /// Element to component mapping.
     #[serde(serialize_with = "ordered_i32_map")]
     pub elements: HashMap<String, BseElementComponents>,
 }
 
+/// Table file data mapping elements to their element files.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseSkelTable {
+    /// Schema information.
     pub molssi_bse_schema: BseMolssiBseSchema,
+    /// Revision description.
     pub revision_description: String,
+    /// Revision date.
     pub revision_date: String,
+    /// Element to element file mapping.
     #[serde(serialize_with = "ordered_i32_map")]
     pub elements: HashMap<String, String>,
 }
 
+/// Metadata file data for a basis set.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseSkelMetadata {
+    /// Schema information.
     pub molssi_bse_schema: BseMolssiBseSchema,
+    /// Alternative names for this basis set.
     pub names: Vec<String>,
+    /// Searchable tags.
     pub tags: Vec<String>,
+    /// Family name (e.g., "dunning", "pople").
     pub family: String,
+    /// Human-readable description.
     pub description: String,
+    /// Role (e.g., "orbital", "jkfit", "rifit").
     pub role: String,
+    /// Associated auxiliary basis sets.
     #[serde(serialize_with = "ordered_map")]
     pub auxiliaries: HashMap<String, BseAuxiliary>,
 }
@@ -108,28 +193,49 @@ pub struct BseSkelMetadata {
 
 /* #region METADATA.json */
 
+/// Version-specific metadata for a basis set.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseRootMetadataVer {
+    /// Relative path to the table file.
     pub file_relpath: String,
+    /// Revision description.
     pub revdesc: String,
+    /// Revision date.
     pub revdate: String,
+    /// List of element atomic numbers this version supports.
     pub elements: Vec<String>,
 }
 
+/// Root metadata for a basis set from METADATA.json.
+///
+/// Contains all information about a basis set needed for lookup and
+/// retrieval, including versions, elements, and auxiliary basis sets.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseRootMetadata {
+    /// Human-readable display name.
     pub display_name: String,
+    /// Alternative names for searching.
     pub other_names: Vec<String>,
+    /// Human-readable description.
     pub description: String,
+    /// Latest version identifier.
     pub latest_version: String,
+    /// Searchable tags.
     pub tags: Vec<String>,
+    /// Base filename.
     pub basename: String,
+    /// Relative path to the basis set files.
     pub relpath: String,
+    /// Family name (e.g., "dunning", "pople").
     pub family: String,
+    /// Role (e.g., "orbital", "jkfit", "rifit").
     pub role: String,
+    /// Function types supported (e.g., "gto", "gto_spherical").
     pub function_types: Vec<String>,
+    /// Associated auxiliary basis sets by role.
     #[serde(serialize_with = "ordered_map")]
     pub auxiliaries: HashMap<String, BseAuxiliary>,
+    /// Available versions indexed by version string.
     #[serde(serialize_with = "ordered_map")]
     pub versions: HashMap<String, BseRootMetadataVer>,
 }
@@ -138,50 +244,88 @@ pub struct BseRootMetadata {
 
 /* #region Bse high-level fields */
 
+/// Reference information for basis set data sources.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BseBasisReference {
+    /// Description of the data source.
     pub reference_description: String,
+    /// Reference keys for citation lookup.
     pub reference_keys: Vec<String>,
 }
 
+/// Basis set data for a single element.
+///
+/// Contains the electron shells and/or ECP potentials for one element,
+/// along with reference information.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct BseBasisElement {
+    /// Reference information for this element's data.
     pub references: Vec<BseBasisReference>,
+    /// Electron shells for this element.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub electron_shells: Option<Vec<BseElectronShell>>,
+    /// ECP potentials for this element.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ecp_potentials: Option<Vec<BseEcpPotential>>,
+    /// Number of electrons replaced by ECP.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ecp_electrons: Option<i32>,
 }
 
+/// Complete basis set information.
+///
+/// The main data structure returned by [`get_basis`][crate::api::get_basis],
+/// containing all elements, shells, and metadata for a basis set.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct BseBasis {
+    /// Schema information.
     pub molssi_bse_schema: BseMolssiBseSchema,
+    /// Revision description.
     pub revision_description: String,
+    /// Revision date.
     pub revision_date: String,
+    /// Element data indexed by atomic number string.
     #[serde(serialize_with = "ordered_i32_map")]
     pub elements: HashMap<String, BseBasisElement>,
+    /// Version string.
     pub version: String,
+    /// Function types in this basis set.
     pub function_types: Vec<String>,
+    /// Alternative names.
     pub names: Vec<String>,
+    /// Searchable tags.
     pub tags: Vec<String>,
+    /// Family name.
     pub family: String,
+    /// Human-readable description.
     pub description: String,
+    /// Role (orbital, jkfit, etc.).
     pub role: String,
+    /// Associated auxiliary basis sets.
     #[serde(serialize_with = "ordered_map")]
     pub auxiliaries: HashMap<String, BseAuxiliary>,
+    /// Display name.
     pub name: String,
 }
 
+/// Minimal basis set information for reader output.
+///
+/// Returned by
+/// [`read_formatted_basis_str`][crate::readers::read::read_formatted_basis_str],
+/// containing parsed basis set data without full metadata.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct BseBasisMinimal {
+    /// Schema information.
     pub molssi_bse_schema: BseMolssiBseSchema,
+    /// Element data indexed by atomic number string.
     #[serde(serialize_with = "ordered_i32_map")]
     pub elements: HashMap<String, BseBasisElement>,
+    /// Function types in this basis set.
     pub function_types: Vec<String>,
+    /// Basis set name.
     pub name: String,
+    /// Description.
     pub description: String,
 }
 
@@ -189,8 +333,10 @@ pub struct BseBasisMinimal {
 
 /* #region ser/de implementation */
 
-/// For use with serde's [serialize_with] attribute
-/// <https://stackoverflow.com/questions/42723065/how-to-sort-hashmap-keys-when-serializing-with-serde>
+/// Serialize a HashMap with keys sorted alphabetically.
+///
+/// Used with serde's `#[serde(serialize_with)]` attribute to produce
+/// consistent JSON output.
 fn ordered_map<S, K: Ord + Serialize, V: Serialize>(value: &HashMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
@@ -199,8 +345,9 @@ where
     ordered.serialize(serializer)
 }
 
-/// For use with serde's [serialize_with] attribute
-/// <https://stackoverflow.com/questions/42723065/how-to-sort-hashmap-keys-when-serializing-with-serde>
+/// Serialize a HashMap with string keys sorted as integers.
+///
+/// Used for element maps where keys are atomic number strings ("1", "2", etc.).
 fn ordered_i32_map<S, V: Serialize>(value: &HashMap<String, V>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
@@ -209,6 +356,7 @@ where
     ordered.serialize(serializer)
 }
 
+/// Wrapper for sorting strings as integers.
 #[derive(Debug)]
 struct IntString(String);
 
@@ -301,26 +449,59 @@ where
 
 /* #region cached read json */
 
+/// Read a GTO component file (panicking version).
+///
+/// # Panics
+///
+/// Panics if the file cannot be read or parsed.
 pub fn read_skel_component_gto_file(element_relpath: &str, data_dir: &str) -> BseSkelComponentGto {
     read_skel_component_gto_file_f(element_relpath, data_dir).unwrap()
 }
 
+/// Read an ECP component file (panicking version).
+///
+/// # Panics
+///
+/// Panics if the file cannot be read or parsed.
 pub fn read_skel_component_ecp_file(element_relpath: &str, data_dir: &str) -> BseSkelComponentEcp {
     read_skel_component_ecp_file_f(element_relpath, data_dir).unwrap()
 }
 
+/// Read an element file (panicking version).
+///
+/// # Panics
+///
+/// Panics if the file cannot be read or parsed.
 pub fn read_skel_element_file(skel_element_relpath: &str, data_dir: &str) -> BseSkelElement {
     read_skel_element_file_f(skel_element_relpath, data_dir).unwrap()
 }
 
+/// Read a table file (panicking version).
+///
+/// # Panics
+///
+/// Panics if the file cannot be read or parsed.
 pub fn read_skel_table_file(skel_table_relpath: &str, data_dir: &str) -> BseSkelTable {
     read_skel_table_file_f(skel_table_relpath, data_dir).unwrap()
 }
 
+/// Read a metadata file (panicking version).
+///
+/// # Panics
+///
+/// Panics if the file cannot be read or parsed.
 pub fn read_skel_metadata_file(skel_metadata_relpath: &str, data_dir: &str) -> BseSkelMetadata {
     read_skel_metadata_file_f(skel_metadata_relpath, data_dir).unwrap()
 }
 
+/// Read and parse a GTO component JSON file.
+///
+/// Results are cached for performance.
+///
+/// # Arguments
+///
+/// * `element_relpath` - Relative path to the component file
+/// * `data_dir` - Base data directory path
 #[cached(size = 50, key = "String", convert = r#" {format!("{data_dir}/{element_relpath}")} "#)]
 pub fn read_skel_component_gto_file_f(element_relpath: &str, data_dir: &str) -> Result<BseSkelComponentGto, BseError> {
     let path = format!("{data_dir}/{element_relpath}");
@@ -328,6 +509,9 @@ pub fn read_skel_component_gto_file_f(element_relpath: &str, data_dir: &str) -> 
     serde_json::from_str(&content).map_err(BseError::from)
 }
 
+/// Read and parse an ECP component JSON file.
+///
+/// Results are cached for performance.
 #[cached(size = 50, key = "String", convert = r#" {format!("{data_dir}/{element_relpath}")} "#)]
 pub fn read_skel_component_ecp_file_f(element_relpath: &str, data_dir: &str) -> Result<BseSkelComponentEcp, BseError> {
     let path = format!("{data_dir}/{element_relpath}");
@@ -335,6 +519,9 @@ pub fn read_skel_component_ecp_file_f(element_relpath: &str, data_dir: &str) -> 
     serde_json::from_str(&content).map_err(BseError::from)
 }
 
+/// Read and parse an element JSON file.
+///
+/// Results are cached for performance.
 #[cached(size = 50, key = "String", convert = r#" {format!("{data_dir}/{skel_element_relpath}")} "#)]
 pub fn read_skel_element_file_f(skel_element_relpath: &str, data_dir: &str) -> Result<BseSkelElement, BseError> {
     let path = format!("{data_dir}/{skel_element_relpath}");
@@ -342,6 +529,9 @@ pub fn read_skel_element_file_f(skel_element_relpath: &str, data_dir: &str) -> R
     serde_json::from_str(&content).map_err(BseError::from)
 }
 
+/// Read and parse a table JSON file.
+///
+/// Results are cached for performance.
 #[cached(size = 50, key = "String", convert = r#" {format!("{data_dir}/{skel_table_relpath}")} "#)]
 pub fn read_skel_table_file_f(skel_table_relpath: &str, data_dir: &str) -> Result<BseSkelTable, BseError> {
     let path = format!("{data_dir}/{skel_table_relpath}");
@@ -349,6 +539,9 @@ pub fn read_skel_table_file_f(skel_table_relpath: &str, data_dir: &str) -> Resul
     serde_json::from_str(&content).map_err(BseError::from)
 }
 
+/// Read and parse a metadata JSON file.
+///
+/// Results are cached for performance.
 #[cached(size = 50, key = "String", convert = r#" {format!("{data_dir}/{skel_metadata_relpath}")} "#)]
 pub fn read_skel_metadata_file_f(skel_metadata_relpath: &str, data_dir: &str) -> Result<BseSkelMetadata, BseError> {
     let path = format!("{data_dir}/{skel_metadata_relpath}");

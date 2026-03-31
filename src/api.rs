@@ -186,61 +186,109 @@ pub fn header_string(basis: &BseBasis) -> String {
 /* #region get_basis */
 
 /// Data source for basis set information.
+///
+/// Specifies where to fetch basis set data from when calling [`get_basis`].
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum BseDataSource {
-    /// Use local data directory (requires `BSE_DATA_DIR` or `data_dir`
-    /// parameter).
+    /// Use local data directory.
+    ///
+    /// Requires `BSE_DATA_DIR` environment variable or `data_dir` parameter
+    /// to be set.
     Local,
-    /// Use remote REST API (requires `remote` feature).
+    /// Use remote REST API.
+    ///
+    /// Requires the `remote` feature to be enabled.
     #[cfg(feature = "remote")]
     Remote,
     /// Try local first, fallback to remote if available.
-    /// Without `remote` feature, this is equivalent to `Local`.
+    ///
+    /// This is the default. Without the `remote` feature, this is
+    /// equivalent to `Local`.
     #[default]
     Auto,
 }
 
+/// Arguments for [`get_basis`] and [`get_formatted_basis`].
+///
+/// Use [`BseGetBasisArgsBuilder`] to construct instances with a fluent API.
+/// The struct can also be deserialized from TOML.
+///
+/// # Example
+///
+/// ```rust
+/// use bse::prelude::*;
+///
+/// // Using the builder
+/// let args = BseGetBasisArgsBuilder::default()
+///     .elements("H, C-O".to_string())
+///     .augment_diffuse(1)
+///     .build()
+///     .unwrap();
+///
+/// // From TOML
+/// let args: BseGetBasisArgs = toml::from_str(r#"
+///     elements = "H, C-O"
+///     augment_diffuse = 1
+/// "#).unwrap();
+/// ```
 #[derive(Builder, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[builder(build_fn(error = "BseError"))]
 #[serde(default)]
 pub struct BseGetBasisArgs {
+    /// Elements to include. Can be atomic numbers, symbols, or ranges like
+    /// "1-3,H-Li,C-O".
     #[builder(default, setter(into))]
     pub elements: Option<String>,
 
+    /// Specific version of the basis set. Defaults to latest version.
     #[builder(default, setter(into))]
     pub version: Option<String>,
 
+    /// Remove general contractions by duplicating primitives.
     #[builder(default = false)]
     pub uncontract_general: bool,
 
+    /// Split combined shells (sp, spd, spdf) into separate shells.
     #[builder(default = false)]
     pub uncontract_spdf: bool,
 
+    /// Fully uncontract: each primitive becomes a separate shell.
     #[builder(default = false)]
     pub uncontract_segmented: bool,
 
+    /// Remove uncontracted (free) primitives from the basis set.
     #[builder(default = false)]
     pub remove_free_primitives: bool,
 
+    /// Make the basis set as generally-contracted as possible.
     #[builder(default = false)]
     pub make_general: bool,
 
+    /// Optimize general contractions by removing redundant functions.
     #[builder(default = false)]
     pub optimize_general: bool,
 
+    /// Number of diffuse functions to add via even-tempered extrapolation.
     #[builder(default = 0)]
     pub augment_diffuse: i32,
 
+    /// Number of steep functions to add via even-tempered extrapolation.
     #[builder(default = 0)]
     pub augment_steep: i32,
 
+    /// Which auxiliary basis to generate:
+    /// - 0: Return orbital basis (default)
+    /// - 1: Generate AutoAux fitting basis
+    /// - 2: Generate Auto-ABS Coulomb fitting basis
     #[builder(default = 0)]
     pub get_aux: i32,
 
+    /// Override the data directory path.
     #[builder(default)]
     pub data_dir: Option<String>,
 
+    /// Include header information in formatted output.
     #[builder(default = true)]
     pub header: bool,
 
@@ -248,8 +296,7 @@ pub struct BseGetBasisArgs {
     #[builder(default)]
     pub source: BseDataSource,
 
-    /// Custom API URL for remote fetching (optional, requires `remote`
-    /// feature).
+    /// Custom API URL for remote fetching (requires `remote` feature).
     #[cfg(feature = "remote")]
     #[builder(default, setter(into))]
     pub api_url: Option<String>,
@@ -706,26 +753,43 @@ pub fn lookup_basis_by_role_f(
 /* #region filter_basis_sets */
 
 /// Arguments for filtering basis sets.
+///
+/// Use [`BseFilterArgsBuilder`] to construct instances. All filter criteria
+/// are combined with AND logic (all must match for a basis set to be included).
+///
+/// # Example
+///
+/// ```rust
+/// use bse::prelude::*;
+///
+/// let args = BseFilterArgsBuilder::default()
+///     .family("dunning".to_string())
+///     .substr("aug".to_string())
+///     .build()
+///     .unwrap();
+///
+/// let filtered = filter_basis_sets(args);
+/// ```
 #[derive(Builder, Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[builder(build_fn(error = "BseError"), default)]
 pub struct BseFilterArgs {
-    /// Substring to search for in the basis set name
+    /// Substring to search for in the basis set name (case insensitive).
     #[builder(default, setter(into))]
     pub substr: Option<String>,
 
-    /// Family the basis set belongs to
+    /// Family the basis set belongs to (e.g., "dunning", "pople").
     #[builder(default, setter(into))]
     pub family: Option<String>,
 
-    /// Role of the basis set
+    /// Role of the basis set (e.g., "orbital", "jkfit", "rifit").
     #[builder(default, setter(into))]
     pub role: Option<String>,
 
-    /// List of elements that the basis set must include
+    /// Elements that the basis set must include (e.g., "H-C", "1-10").
     #[builder(default, setter(into))]
     pub elements: Option<String>,
 
-    /// Data directory
+    /// Override the data directory path.
     #[builder(default)]
     pub data_dir: Option<String>,
 }
@@ -755,8 +819,8 @@ pub struct BseFilterArgs {
 /// ```
 /// use bse::prelude::*;
 /// let args = BseFilterArgsBuilder::default()
-///     .family("dunning")
-///     .substr("aug")
+///     .family("dunning".to_string())
+///     .substr("aug".to_string())
 ///     .build()
 ///     .unwrap();
 /// let filtered = filter_basis_sets(args);

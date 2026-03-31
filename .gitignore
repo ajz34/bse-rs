@@ -17,6 +17,7 @@ book
 # claude local config
 *.local
 *.local.*
+scratch/
 
 # bindgen
 blas_bindgen.h

@@ -1,8 +1,13 @@
-//! Sorting of BSE related dictionaries and data.
+//! Sorting utilities for basis set data.
+//!
+//! Provides functions to sort shells and potentials within a basis set
+//! into a canonical order for consistent output.
 
 use crate::prelude::*;
 
-/// Computes the spatial extent for the orbitals on the shell.
+/// Compute the spatial extent (<r²>) for orbitals in a shell.
+///
+/// Used to determine the ordering of shells within a basis set.
 pub fn spatial_extent(sh: &BseElectronShell) -> Vec<f64> {
     let mut rsq = Vec::new();
 
@@ -29,7 +34,14 @@ pub fn spatial_extent(sh: &BseElectronShell) -> Vec<f64> {
     rsq
 }
 
-/// Sort a basis set shell into a standard order.
+/// Sort a single shell into canonical order.
+///
+/// Exponents are sorted in decreasing order. Contractions are sorted
+/// by increasing spatial extent.
+///
+/// # Arguments
+///
+/// * `shell` - The shell to sort (modified in place)
 pub fn sort_shell(shell: &mut BseElectronShell) {
     let tmp_c = shell.coefficients.clone();
     let tmp_z = shell.exponents.clone();
@@ -117,7 +129,14 @@ pub fn sort_potentials(potentials: &mut Vec<BseEcpPotential>) {
     }
 }
 
-/// Sorts all the information in a basis set into a standard order.
+/// Sort all shells and potentials in a basis set into canonical order.
+///
+/// For each element, electron shells are sorted by angular momentum
+/// and spatial extent, and ECP potentials are sorted by angular momentum.
+///
+/// # Arguments
+///
+/// * `basis` - The basis set to sort (modified in place)
 pub fn sort_basis(basis: &mut BseBasis) {
     // Sort electron shells and ECP potentials for each element
     for (_, element) in basis.elements.iter_mut() {

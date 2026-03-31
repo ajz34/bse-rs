@@ -1,16 +1,31 @@
+//! Error types for the bse crate.
+//!
+//! This module defines the [`BseError`] enum for all error conditions
+//! that can occur when working with basis sets.
+
 use std::error::Error;
 use std::fmt::Display;
 
+/// Error type for basis set operations.
 #[derive(Debug, Clone)]
 pub enum BseError {
+    /// Basis set or element data not found.
     DataNotFound(String),
+    /// Invalid data format or content.
     DataError(String),
+    /// Invalid key in lookup operation.
     KeyError(String),
+    /// Invalid value provided by user.
     ValueError(String),
+    /// Feature not yet implemented.
     NotImplementedError(String),
+    /// I/O error reading files.
     IOError(String),
+    /// JSON serialization/deserialization error.
     SerdeJsonError(String),
+    /// Other errors.
     Miscellaneous(String),
+    /// Builder field not initialized.
     UninitializedFieldError(derive_builder::UninitializedFieldError),
 }
 
@@ -40,6 +55,7 @@ impl From<derive_builder::UninitializedFieldError> for BseError {
     }
 }
 
+/// Create a trace string with file, line, and column information.
 #[macro_export]
 macro_rules! bse_trace {
     () => {
@@ -47,6 +63,14 @@ macro_rules! bse_trace {
     };
 }
 
+/// Raise a [`BseError`] with trace information.
+///
+/// # Example
+///
+/// ```rust,compile_fail
+/// use bse::prelude::*;
+/// bse_raise!(ValueError, "Invalid element: {}", "Xx")?;
+/// ```
 #[macro_export]
 macro_rules! bse_raise {
     ($errtype: ident, $($arg:tt)*) => {{

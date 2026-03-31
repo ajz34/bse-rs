@@ -398,7 +398,7 @@ pub fn get_writer_formats(function_types: Option<Vec<String>>) -> HashMap<String
 ///
 /// ```
 /// use bse::prelude::*;
-/// let ext = get_format_extension("nwchem");
+/// let ext = get_format_extension("nwchem").unwrap();
 /// assert_eq!(ext, ".nw");
 /// ```
 pub fn get_format_extension(fmt: &str) -> Result<&'static str, BseError> {

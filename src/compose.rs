@@ -1,28 +1,57 @@
-//! Functions related to composing basis sets from individual components.
+//! Functions for composing basis sets from individual components.
+//!
+//! Basis sets in the BSE data format are stored as separate files:
+//! - Table files (`.table.json`) - map elements to element files
+//! - Element files (`.element.json`) - map elements to component files
+//! - Component files - contain the actual shell data
+//!
+//! This module handles reading and combining these files into complete
+//! [`BseBasis`] structures.
 
 use crate::prelude::*;
 
-/// Creates a 'table' basis from an table json file.
+/// Creates a complete basis set from a table JSON file.
 ///
-/// This function reads the info from the given file, and reads all the
-/// elemental basis set information from the files listed therein. It then
-/// composes all the information together into one 'table' basis dictionary
+/// This is the main function for loading a basis set. It reads the table file,
+/// then recursively loads all element files and component files referenced
+/// within.
 ///
-/// Note that the data returned from this function will not be shared, even if
-/// the function is called again with the same arguments.
+/// # Arguments
+///
+/// * `file_relpath` - Relative path to the table file (e.g.,
+///   "def2-TZVP.1.table.json")
+/// * `data_dir` - Base data directory path
+///
+/// # Returns
+///
+/// A complete [`BseBasis`] with all elements and metadata.
+///
+/// # Note
+///
+/// The returned basis set is a unique instance, even if the function is called
+/// multiple times with the same arguments.
 pub fn compose_table_basis(file_relpath: &str, data_dir: &str) -> BseBasis {
     compose_table_basis_f(file_relpath, data_dir).unwrap()
 }
 
-/// Creates an 'elemental' basis from an elemental json file.
+/// Creates element basis data from an element JSON file.
 ///
-/// This function reads the info from the given file, and reads all the
-/// component basis set information from the files listed therein. It then
-/// composes all the information together into one 'elemental' basis dictionary
+/// Reads the element file and all component files it references, combining
+/// them into a map of element data.
+///
+/// # Arguments
+///
+/// * `file_relpath` - Relative path to the element file
+/// * `data_dir` - Base data directory path
+///
+/// # Returns
+///
+/// A HashMap mapping atomic number strings to [`BseBasisElement`].
 pub fn compose_elemental_basis(file_relpath: &str, data_dir: &str) -> HashMap<String, BseBasisElement> {
     compose_elemental_basis_f(file_relpath, data_dir).unwrap()
 }
 
+/// Determine all function types present in a basis set's elements.
 pub(crate) fn whole_basis_types(basis_elements: &HashMap<String, BseBasisElement>) -> Vec<String> {
     let mut function_types = HashSet::new();
     for basis_element in basis_elements.values() {
@@ -38,6 +67,7 @@ pub(crate) fn whole_basis_types(basis_elements: &HashMap<String, BseBasisElement
     function_types.into_iter().sorted().collect()
 }
 
+/// Fallible version of [`compose_elemental_basis`].
 pub fn compose_elemental_basis_f(
     file_relpath: &str,
     data_dir: &str,
@@ -130,6 +160,9 @@ pub fn compose_elemental_basis_f(
     Ok(basis_elements)
 }
 
+/// Fallible version of [`compose_table_basis`].
+///
+/// Results are cached for performance.
 #[cached(key = "String", convert = r#"{ format!("{data_dir}/{file_relpath}") }"#)]
 pub fn compose_table_basis_f(file_relpath: &str, data_dir: &str) -> Result<BseBasis, BseError> {
     // read skeleton table

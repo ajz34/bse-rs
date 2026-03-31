@@ -1,14 +1,28 @@
-//! Common basis set manipulations
+//! Common basis set manipulations.
 //!
-//! This module contains functions for uncontracting and merging basis set data,
-//! as well as some other small functions.
+//! This module provides functions for transforming basis sets:
+//! - **Uncontracting**: Remove contractions to get primitive shells
+//! - **Optimization**: Simplify general contractions
+//! - **Augmentation**: Add diffuse or steep functions
+//! - **Auxiliary generation**: Create fitting basis sets
+//!
+//! Most functions modify the basis set in place. Use [`prune_basis`] after
+//! manipulations to remove duplicates and zero coefficients.
 
 use crate::prelude::*;
 
-/// Removes exact duplicates of primitives, and condenses duplicate exponents
-/// into general contractions.
+/// Remove duplicate exponents and zero coefficients from a shell.
 ///
-/// Also removes primitives if all coefficients are zero.
+/// Condenses duplicate exponents into general contractions and removes
+/// primitives with all-zero coefficients.
+///
+/// # Arguments
+///
+/// * `shell` - The electron shell to prune
+///
+/// # Returns
+///
+/// A new shell with duplicates removed.
 pub fn prune_shell(shell: &BseElectronShell) -> BseElectronShell {
     let mut new_exponents = Vec::new();
     let mut new_coefficients = Vec::new();
@@ -99,13 +113,15 @@ pub fn prune_shell(shell: &BseElectronShell) -> BseElectronShell {
     }
 }
 
+/// Remove duplicate shells and zero coefficients from a basis set.
+///
+/// Applies [`prune_shell`] to each shell, then removes duplicate shells.
+/// This is meant to be used after other manipulations.
+///
+/// # Arguments
+///
+/// * `basis` - The basis set to prune (modified in place)
 pub fn prune_basis(basis: &mut BseBasis) {
-    // Removes primitives that have a zero coefficient, and
-    // removes duplicate primitives and shells
-    //
-    // This only finds EXACT duplicates, and is meant to be used
-    // after other manipulations
-
     for (_, el) in basis.elements.iter_mut() {
         let shells = match &mut el.electron_shells {
             Some(shells) => shells,
@@ -129,16 +145,21 @@ pub fn prune_basis(basis: &mut BseBasis) {
     }
 }
 
-/// Removes sp, spd, spdf, etc, contractions from a basis set.
+/// Split combined shells (sp, spd, spdf) into separate shells.
 ///
-/// The general contractions are replaced by uncontracted versions
+/// Combined shells have multiple angular momentum values in a single shell.
+/// This function splits them into separate shells, one per angular momentum.
 ///
-/// Contractions up to max_am will be left in place. For example,
-/// if max_am = 1, spd will be split into sp and d
+/// # Arguments
 ///
-/// The input basis set is modified directly.
-/// The returned basis may have functions with coefficients of zero and may
-/// have duplicate shells.
+/// * `basis` - The basis set to modify (modified in place)
+/// * `max_am` - Maximum angular momentum to keep combined. For example, if
+///   `max_am = 1`, an spd shell becomes sp + d.
+///
+/// # Note
+///
+/// The resulting basis may have duplicate shells. Call [`prune_basis`]
+/// afterward to clean up.
 pub fn uncontract_spdf(basis: &mut BseBasis, max_am: i32) {
     for (_, el) in basis.elements.iter_mut() {
         let Some(electron_shells) = &mut el.electron_shells else {
@@ -181,11 +202,19 @@ pub fn uncontract_spdf(basis: &mut BseBasis, max_am: i32) {
     }
 }
 
-/// Removes the general contractions from a basis set
+/// Remove general contractions from a basis set.
 ///
-/// The input basis set is modified in place. The resulting basis
-/// may have functions with coefficients of zero and may have duplicate
-/// shells.
+/// General contractions have multiple coefficient vectors for the same
+/// set of exponents. This function splits them into separate shells.
+///
+/// # Arguments
+///
+/// * `basis` - The basis set to modify (modified in place)
+///
+/// # Note
+///
+/// Combined shells (sp, spd, etc.) are not affected. Use [`uncontract_spdf`]
+/// for those. The resulting basis may have duplicate shells.
 pub fn uncontract_general(basis: &mut BseBasis) {
     for (_, el) in basis.elements.iter_mut() {
         let Some(ref mut electron_shells) = el.electron_shells else {
@@ -214,14 +243,15 @@ pub fn uncontract_general(basis: &mut BseBasis) {
     }
 }
 
-/// Removes the segmented contractions from a basis set
+/// Fully uncontract a basis set to individual primitives.
 ///
-/// This implicitly removes general contractions as well,
-/// but will leave sp, spd, ... orbitals alone
+/// Each primitive becomes a separate shell with coefficient 1.0.
+/// Combined shells (sp, spd, etc.) are preserved as separate shells
+/// for each angular momentum.
 ///
-/// The input basis set is modified directly.
-/// The resulting basis may have functions with coefficients of zero
-/// and may have duplicate shells.
+/// # Arguments
+///
+/// * `basis` - The basis set to modify (modified in place)
 pub fn uncontract_segmented(basis: &mut BseBasis) {
     for (_, el) in basis.elements.iter_mut() {
         let Some(electron_shells) = &mut el.electron_shells else {
@@ -250,10 +280,20 @@ pub fn uncontract_segmented(basis: &mut BseBasis) {
     }
 }
 
-/// Makes one large general contraction for each angular momentum
+/// Combine shells of the same angular momentum into general contractions.
 ///
-/// The output of this function is not pretty. If you want to make it nicer,
-/// use sort_basis afterwards.
+/// Creates one large general contraction for each angular momentum per element.
+/// This is the inverse of [`uncontract_general`].
+///
+/// # Arguments
+///
+/// * `basis` - The basis set to modify (modified in place)
+/// * `skip_spdf` - If true, leave combined shells (sp, spd) untouched
+///
+/// # Note
+///
+/// The output may not be aesthetically pleasing. Use
+/// [`sort_basis`][crate::sort::sort_basis] afterward for better formatting.
 pub fn make_general(basis: &mut BseBasis, skip_spdf: bool) {
     let zero = "0.00000000";
 
@@ -349,13 +389,14 @@ pub fn make_general(basis: &mut BseBasis, skip_spdf: bool) {
     prune_basis(basis);
 }
 
-/// Check if there is only one non-zero coefficient in a vector.
-/// This function is used to determine if two basis shares the same exponents
-/// but different coefficients.
+/// Check if a coefficient column has exactly one non-zero value.
+///
+/// Used to identify free (uncontracted) primitives.
 fn is_single_column(col: &[String]) -> bool {
     col.iter().filter(|s| s.parse::<f64>().unwrap() != 0.0).count() == 1
 }
 
+/// Find indices of free (uncontracted) primitives in a coefficient matrix.
 fn free_primitives(coeffs: &[Vec<String>]) -> Vec<usize> {
     // Find which columns represent free primitives
     let single_columns = coeffs.iter().filter(|col| is_single_column(col)).collect_vec();
@@ -377,11 +418,14 @@ fn free_primitives(coeffs: &[Vec<String>]) -> Vec<usize> {
     csum.iter().enumerate().filter(|(_, val)| **val != 0.0).map(|(idx, _)| idx).collect_vec()
 }
 
-/// Removes any free primitives from a basis set as a way to generate a minimal
-/// basis.
+/// Remove uncontracted (free) primitives from a basis set.
 ///
-/// The input basis set is not modified. The returned basis may have functions
-/// with coefficients of zero and may have duplicate shells.
+/// Free primitives have coefficient 1.0 in only one contraction.
+/// This can be used to generate a minimal basis from an augmented set.
+///
+/// # Arguments
+///
+/// * `basis` - The basis set to modify (modified in place)
 pub fn remove_free_primitives(basis: &mut BseBasis) {
     for (_, el) in basis.elements.iter_mut() {
         if el.electron_shells.is_none() {
@@ -468,25 +512,27 @@ pub fn optimize_general(basis: &mut BseBasis) {
     }
 }
 
-/// Extends a basis set by adding extrapolated diffuse or steep functions.
+/// Add diffuse or steep functions via even-tempered extrapolation.
 ///
-/// For augmented Dunning sets (aug), the diffuse augmentation
-/// corresponds to multiple augmentation (aug -> daug, taug, ...).
+/// Extends a basis set by adding new functions using geometric progression.
+/// For augmented Dunning sets (aug), diffuse augmentation corresponds to
+/// multiple augmentation (aug -> daug, taug, ...).
 ///
-/// In order for the augmentation to make sense, the two outermost
-/// primitives have to be free i.e. uncontracted.
+/// # Arguments
 ///
-/// Parameters
-/// ----------
-/// basis: &mut BseBasis
-///     Basis set dictionary to work with
-/// nadd: i32
-///     Number of functions to add (must be >=1). For diffuse augmentation on an
-///     augmented set: 1 -> daug, 2 -> taug, etc use_copy: bool
-///     If True, the input basis set is not modified.
-/// steep: bool
-///     If True, the augmentation is done for steep functions instead of diffuse
-///     functions.
+/// * `basis` - The basis set to modify (modified in place)
+/// * `nadd` - Number of functions to add (must be >= 1)
+/// * `steep` - If true, add steep functions; if false, add diffuse functions
+///
+/// # Requirements
+///
+/// The two outermost primitives must be free (uncontracted) for the
+/// extrapolation to work correctly.
+///
+/// # Reference
+///
+/// Woon & Dunning, Jr., J. Chem. Phys. 100, 2975 (1994)
+/// <https://doi.org/10.1063/1.466439>
 pub fn geometric_augmentation(basis: &mut BseBasis, nadd: i32, steep: bool) {
     if nadd < 1 {
         panic!("Adding {nadd} functions makes no sense for geometric_augmentation");

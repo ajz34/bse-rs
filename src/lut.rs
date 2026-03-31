@@ -34,12 +34,13 @@ pub fn element_data_from_name(name: &str) -> Option<(&'static str, i32, &'static
     ELEMENT_NAME_MAP.get(&name_lower).copied()
 }
 
-/// Obtain the symbol of an element given its Z (charge) number.
+/// Obtain the name of an element given its Z (charge) number.
 #[inline]
 pub fn element_name_from_Z(z: i32) -> Option<&'static str> {
     ELEMENT_Z_MAP.get(&z).map(|(_, _, name)| *name)
 }
 
+/// Obtain the capitalized name of an element given its Z (charge) number.
 #[inline]
 pub fn element_name_from_Z_with_normalize(z: i32) -> Option<String> {
     ELEMENT_Z_MAP.get(&z).map(|(_, _, name)| {
@@ -51,7 +52,7 @@ pub fn element_name_from_Z_with_normalize(z: i32) -> Option<String> {
     })
 }
 
-/// Obtain the symbol of an element given its symbol.
+/// Obtain the Z (charge) number of an element given its name.
 #[inline]
 pub fn element_Z_from_name(name: &str) -> Option<i32> {
     let name_lower = name.to_lowercase();

@@ -1,9 +1,16 @@
-//! Helpers for printing pieces of basis sets
+//! Helper functions for formatting basis set output.
+//!
+//! Provides utilities for formatting coefficient matrices with
+//! proper alignment and scientific notation.
 
 use crate::prelude::*;
 
-/// Find how many spaces to put before a column of numbers so that all the
-/// decimal points line up.
+/// Calculate left padding for each column to align decimal points.
+///
+/// # Arguments
+///
+/// * `column` - Column of numbers as strings
+/// * `point_place` - Desired position of the decimal point
 fn determine_leftpad(column: &[String], point_place: usize) -> Vec<usize> {
     column
         .iter()
@@ -14,6 +21,20 @@ fn determine_leftpad(column: &[String], point_place: usize) -> Vec<usize> {
         .collect()
 }
 
+/// Format a matrix with aligned decimal points.
+///
+/// Writes a coefficient matrix with proper spacing so that all decimal
+/// points line up vertically.
+///
+/// # Arguments
+///
+/// * `mat` - Matrix to format (coefficients as strings)
+/// * `point_places` - Desired decimal point positions for each column
+/// * `convert_exp` - If true, convert 'e' to 'D' for Fortran compatibility
+///
+/// # Returns
+///
+/// A formatted string representation of the matrix.
 pub fn write_matrix(mat: &[Vec<String>], point_places: &[usize], convert_exp: bool) -> String {
     // Padding for the whole matrix
     let pad = mat.iter().zip(point_places).map(|(c, &p)| determine_leftpad(c, p)).collect_vec();
