@@ -117,7 +117,7 @@ fn get_basis_metadata(name: &str, data_dir: &str) -> Result<BseRootMetadata, Bse
 ///
 /// Information includes description, revision, etc, but not references.
 pub fn header_string(basis: &BseBasis) -> String {
-    use textwrap::{Options, wrap};
+    use textwrap::{wrap, Options};
     let space_14 = " ".repeat(14);
     let tw = Options::new(70).initial_indent("").subsequent_indent(&space_14);
 

@@ -123,7 +123,11 @@ pub fn amint_to_char(am: &[i32], hij: bool) -> String {
 /// This convention happens to GAMESS and PQS.
 #[inline]
 pub fn amint_to_char_use_L(am: &[i32], hij: bool) -> String {
-    if am == [0, 1] { "l".to_string() } else { amint_to_char(am, hij) }
+    if am == [0, 1] {
+        "l".to_string()
+    } else {
+        amint_to_char(am, hij)
+    }
 }
 
 /// Convert an angular momentum integer to a character.
@@ -247,7 +251,11 @@ pub fn electron_shells_start(nelectrons: i32, max_am: usize) -> Vec<i32> {
 
 #[inline]
 pub fn function_type_from_am(shell_am: &[i32], base_type: &str, spherical_type: &str) -> String {
-    if *shell_am.iter().max().unwrap() <= 1 { base_type.to_string() } else { format!("{base_type}_{spherical_type}") }
+    if *shell_am.iter().max().unwrap() <= 1 {
+        base_type.to_string()
+    } else {
+        format!("{base_type}_{spherical_type}")
+    }
 }
 
 #[cfg(test)]

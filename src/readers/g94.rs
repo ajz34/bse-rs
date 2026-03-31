@@ -58,8 +58,9 @@ fn parse_electron_lines(
             (shell_am, parsed[1].clone(), parsed[2].clone())
         } else if EXPLICIT_AM_LINE_RE.is_match(&sh_lines[0]) {
             let parsed = helpers::parse_line_regex(&EXPLICIT_AM_LINE_RE, &sh_lines[0], "Shell AM, nprim, scaling")?;
-            let shell_am =
-                vec![parsed[0].parse().map_or(bse_raise!(ValueError, "Invalid angular momentum: {}", parsed[0]), Ok)?];
+            let shell_am = vec![parsed[0]
+                .parse()
+                .map_or(bse_raise!(ValueError, "Invalid angular momentum: {}", parsed[0]), Ok)?];
             (shell_am, parsed[1].clone(), parsed[2].clone())
         } else {
             return bse_raise!(ValueError, "Failed to parse shell block starting on line: {}", sh_lines[0]);
@@ -137,7 +138,12 @@ fn parse_electron_lines(
             coefficients,
         };
 
-        elements.entry(element_Z.to_string()).or_default().electron_shells.get_or_insert_default().push(shell);
+        elements
+            .entry(element_Z.to_string())
+            .or_default()
+            .electron_shells
+            .get_or_insert_with(Default::default)
+            .push(shell);
     }
 
     Ok(())
@@ -190,7 +196,12 @@ fn parse_ecp_lines(elements: &mut HashMap<String, BseBasisElement>, basis_lines:
             gaussian_exponents: ecp_data.g_exp,
         };
 
-        elements.entry(element_Z.to_string()).or_default().ecp_potentials.get_or_insert_default().push(ecp_pot);
+        elements
+            .entry(element_Z.to_string())
+            .or_default()
+            .ecp_potentials
+            .get_or_insert_with(Default::default)
+            .push(ecp_pot);
     }
 
     // Determine the AM of the potentials

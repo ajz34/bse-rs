@@ -203,16 +203,16 @@ pub fn partition_lines(
         }
     }
 
-    if let Some(min_blocks) = min_blocks
-        && all_blocks.len() < min_blocks
-    {
-        bse_raise!(ValueError, "Found {} blocks, but need at least {}", all_blocks.len(), min_blocks)?
+    if let Some(min_blocks) = min_blocks {
+        if all_blocks.len() < min_blocks {
+            bse_raise!(ValueError, "Found {} blocks, but need at least {}", all_blocks.len(), min_blocks)?
+        }
     }
 
-    if let Some(max_blocks) = max_blocks
-        && all_blocks.len() > max_blocks
-    {
-        bse_raise!(ValueError, "Found {} blocks, but need at most {}", all_blocks.len(), max_blocks)?
+    if let Some(max_blocks) = max_blocks {
+        if all_blocks.len() > max_blocks {
+            bse_raise!(ValueError, "Found {} blocks, but need at most {}", all_blocks.len(), max_blocks)?
+        }
     }
 
     Ok(all_blocks)
@@ -394,16 +394,16 @@ pub fn parse_matrix(
     }
 
     // Validate dimensions if specified
-    if let Some(expected_rows) = rows
-        && mat.len() != expected_rows
-    {
-        bse_raise!(ValueError, "Inconsistent number of rows: {expected_rows} vs {}", mat.len())?
+    if let Some(expected_rows) = rows {
+        if mat.len() != expected_rows {
+            bse_raise!(ValueError, "Inconsistent number of rows: {expected_rows} vs {}", mat.len())?
+        }
     }
 
-    if let Some(expected_cols) = cols
-        && mat[0].len() != expected_cols
-    {
-        bse_raise!(ValueError, "Inconsistent number of columns: {expected_cols} vs {}", mat[0].len())?
+    if let Some(expected_cols) = cols {
+        if mat[0].len() != expected_cols {
+            bse_raise!(ValueError, "Inconsistent number of columns: {expected_cols} vs {}", mat[0].len())?
+        }
     }
 
     Ok(mat)
@@ -494,14 +494,14 @@ pub fn parse_primitive_matrix(
         }
     }
 
-    if let Some(expected_ngen) = ngen
-        && coefficients.len() != expected_ngen
-    {
-        bse_raise!(
-            ValueError,
-            "Inconsistent number of general contractions: {expected_ngen} vs {}",
-            coefficients.len()
-        )?
+    if let Some(expected_ngen) = ngen {
+        if coefficients.len() != expected_ngen {
+            bse_raise!(
+                ValueError,
+                "Inconsistent number of general contractions: {expected_ngen} vs {}",
+                coefficients.len()
+            )?
+        }
     }
 
     Ok((exponents, coefficients))

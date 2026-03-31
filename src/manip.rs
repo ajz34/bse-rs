@@ -775,7 +775,7 @@ pub fn autoaux_basis(basis: &BseBasis) -> BseBasis {
                     exponents: vec![z],
                     coefficients: vec![vec!["1.0".to_string()]],
                 };
-                aux_element_data.electron_shells.get_or_insert_default().push(shell);
+                aux_element_data.electron_shells.get_or_insert_with(Default::default).push(shell);
             }
         }
     }
@@ -914,7 +914,7 @@ pub fn autoabs_basis(basis: &BseBasis, lmaxinc: i32, fsam: f64) -> BseBasis {
                 exponents: vec![misc::format_exponent(f.0)],
                 coefficients: vec![vec!["1.0".to_string()]],
             };
-            aux_element_data.electron_shells.get_or_insert_default().push(shell);
+            aux_element_data.electron_shells.get_or_insert_with(Default::default).push(shell);
         }
     }
 

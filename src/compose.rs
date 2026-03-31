@@ -109,15 +109,17 @@ pub fn compose_elemental_basis_f(
                     }
                     if basis_element.ecp_electrons.is_none() {
                         basis_element.ecp_electrons = Some(ecp_element.ecp_electrons);
-                    } else if let Some(electrons) = basis_element.ecp_electrons
-                        && electrons != ecp_element.ecp_electrons
-                    {
-                        bse_raise!(
-                            DataError,
-                            "Internal bug: ECP electron not match ({} != {})",
-                            electrons,
-                            ecp_element.ecp_electrons
-                        )?;
+                    } else {
+                        if let Some(electrons) = basis_element.ecp_electrons {
+                            if electrons != ecp_element.ecp_electrons {
+                                bse_raise!(
+                                    DataError,
+                                    "Internal bug: ECP electron not match ({} != {})",
+                                    electrons,
+                                    ecp_element.ecp_electrons
+                                )?;
+                            }
+                        }
                     }
                 },
             }

@@ -62,7 +62,12 @@ fn parse_electron_lines(
             coefficients,
         };
 
-        elements.entry(element_Z.to_string()).or_default().electron_shells.get_or_insert_default().push(shell);
+        elements
+            .entry(element_Z.to_string())
+            .or_default()
+            .electron_shells
+            .get_or_insert_with(Default::default)
+            .push(shell);
     }
 
     Ok(())
@@ -114,7 +119,12 @@ fn parse_ecp_lines(elements: &mut HashMap<String, BseBasisElement>, basis_lines:
                 r_exponents: ecp_data.r_exp,
                 gaussian_exponents: ecp_data.g_exp,
             };
-            elements.entry(element_Z.to_string()).or_default().ecp_potentials.get_or_insert_default().push(ecp_pot);
+            elements
+                .entry(element_Z.to_string())
+                .or_default()
+                .ecp_potentials
+                .get_or_insert_with(Default::default)
+                .push(ecp_pot);
         };
     }
 

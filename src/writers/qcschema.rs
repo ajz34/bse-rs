@@ -33,33 +33,34 @@ pub fn write_qcschema(basis: &BseBasis) -> String {
         let eldata_obj = eldata_json.as_object_mut().unwrap();
         eldata_obj.remove("references");
 
-        if let Some(shells) = eldata_obj.get_mut("electron_shells")
-            && let Some(shells_arr) = shells.as_array_mut()
-        {
-            for shell in shells_arr {
-                let shell_obj = shell.as_object_mut().unwrap();
-                shell_obj.remove("region");
-                let func = shell_obj.remove("function_type").unwrap().as_str().unwrap().to_string();
+        if let Some(shells) = eldata_obj.get_mut("electron_shells") {
+            if let Some(shells_arr) = shells.as_array_mut() {
+                for shell in shells_arr {
+                    let shell_obj = shell.as_object_mut().unwrap();
+                    shell_obj.remove("region");
+                    let func = shell_obj.remove("function_type").unwrap().as_str().unwrap().to_string();
 
-                let harmonic_type = if func == "gto_spherical" {
-                    "spherical"
-                } else {
-                    // Set to cartesian if explicitly cartesian, or if it is an
-                    // s or p shell
-                    "cartesian"
-                };
-                shell_obj.insert("harmonic_type".to_string(), json!(harmonic_type));
+                    let harmonic_type = if func == "gto_spherical" {
+                        "spherical"
+                    } else {
+                        // Set to cartesian if explicitly cartesian, or if it is an
+                        // s or p shell
+                        "cartesian"
+                    };
+                    shell_obj.insert("harmonic_type".to_string(), json!(harmonic_type));
+                }
             }
         }
 
-        if eldata_obj.contains_key("ecp_electrons")
-            && let Some(pots) = eldata_obj.get_mut("ecp_potentials")
-            && let Some(pots_arr) = pots.as_array_mut()
-        {
-            for pot in pots_arr {
-                let pot_obj = pot.as_object_mut().unwrap();
-                let ecp_type = pot_obj["ecp_type"].as_str().unwrap().replace("_ecp", "");
-                pot_obj.insert("ecp_type".to_string(), json!(ecp_type));
+        if eldata_obj.contains_key("ecp_electrons") {
+            if let Some(pots) = eldata_obj.get_mut("ecp_potentials") {
+                if let Some(pots_arr) = pots.as_array_mut() {
+                    for pot in pots_arr {
+                        let pot_obj = pot.as_object_mut().unwrap();
+                        let ecp_type = pot_obj["ecp_type"].as_str().unwrap().replace("_ecp", "");
+                        pot_obj.insert("ecp_type".to_string(), json!(ecp_type));
+                    }
+                }
             }
         }
 

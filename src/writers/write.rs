@@ -215,17 +215,17 @@ pub fn write_formatted_basis_str_f(basis_dict: &BseBasis, fmt: &str, header: Opt
     // Actually do the conversion
     let mut ret_str = (writer.function)(basis_dict);
 
-    if let Some(header) = header
-        && !writer.comment.is_empty()
-    {
-        let comment_str = writer.comment;
-        let header_str = header.split('\n').map(|line| format!("{comment_str}{line}")).join("\n");
+    if let Some(header) = header {
+        if !writer.comment.is_empty() {
+            let comment_str = writer.comment;
+            let header_str = header.split('\n').map(|line| format!("{comment_str}{line}")).join("\n");
 
-        // HACK - Gaussian94Lib doesn't tolerate blank lines after the header
-        if fmt == "gaussian94lib" {
-            ret_str.insert_str(0, &header_str);
-        } else {
-            ret_str.insert_str(0, &format!("{header_str}\n\n"));
+            // HACK - Gaussian94Lib doesn't tolerate blank lines after the header
+            if fmt == "gaussian94lib" {
+                ret_str.insert_str(0, &header_str);
+            } else {
+                ret_str.insert_str(0, &format!("{header_str}\n\n"));
+            }
         }
     }
 

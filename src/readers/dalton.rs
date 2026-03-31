@@ -144,7 +144,12 @@ fn parse_electron_lines(
                 coefficients,
             };
 
-            elements.entry(element_Z.clone()).or_default().electron_shells.get_or_insert_default().push(shell);
+            elements
+                .entry(element_Z.clone())
+                .or_default()
+                .electron_shells
+                .get_or_insert_with(Default::default)
+                .push(shell);
         }
     }
 
