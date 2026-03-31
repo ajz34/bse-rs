@@ -41,24 +41,69 @@ fn get_bse_data_dir_manifest() -> String {
         .map_or(String::new(), |dir| format!("{dir}/basis_set_exchange/basis_set_exchange/data"))
 }
 
+/// Try to detect BSE data directory via Python's basis_set_exchange package.
+///
+/// This function attempts to run Python to query the installed
+/// `basis_set_exchange` package for its data directory location. It does not
+/// require pyo3 or linking to libpython - it simply spawns a subprocess.
+///
+/// # Returns
+///
+/// - `Some(String)` if Python is available and `basis_set_exchange` is
+///   installed
+/// - `None` if Python is not available, the package is not installed, or the
+///   subprocess fails
+#[once]
+fn get_bse_data_dir_python() -> Option<String> {
+    use std::process::Command;
+
+    // Try multiple Python interpreters in order of preference
+    let python_commands = ["python3", "python"];
+
+    for python in python_commands {
+        let result = Command::new(python)
+            .args(["-c", "import basis_set_exchange; print(basis_set_exchange.get_data_dir())"])
+            .output();
+
+        if let Ok(output) = result {
+            if output.status.success() {
+                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !path.is_empty() && std::path::Path::new(&path).exists() {
+                    return Some(path);
+                }
+            }
+        }
+    }
+
+    None
+}
+
 /// Get the available data directory for the basis set exchange library.
 ///
 /// This function checks the following directories in order:
 /// 1. The directory specified by `specify_bse_data_dir`.
 /// 2. The directory specified by the environment variable `BSE_DATA_DIR`.
-/// 3. The directory specified by the `CARGO_MANIFEST_DIR` (the directory where
+/// 3. The directory detected via Python's installed `basis_set_exchange`
+///    package.
+/// 4. The directory specified by the `CARGO_MANIFEST_DIR` (the directory where
 ///    your crate built).
 pub fn get_bse_data_dir() -> Option<String> {
     let dir_specified = get_bse_data_dir_specified();
     let dir_env = get_bse_data_dir_env();
+    let dir_python = get_bse_data_dir_python();
     let dir_manifest = get_bse_data_dir_manifest();
 
-    // return the dir that `{dir}/METADATA.json` exists
-    if std::path::Path::new(&format!("{dir_specified}/METADATA.json")).exists() {
+    // Helper to check if a directory contains METADATA.json
+    let is_valid_dir = |dir: &str| std::path::Path::new(&format!("{dir}/METADATA.json")).exists();
+
+    // Check in order: specified -> env -> python -> manifest
+    if !dir_specified.is_empty() && is_valid_dir(&dir_specified) {
         Some(dir_specified)
-    } else if std::path::Path::new(&format!("{dir_env}/METADATA.json")).exists() {
+    } else if !dir_env.is_empty() && is_valid_dir(&dir_env) {
         Some(dir_env)
-    } else if std::path::Path::new(&format!("{dir_manifest}/METADATA.json")).exists() {
+    } else if dir_python.as_ref().is_some_and(|d| is_valid_dir(d)) {
+        dir_python
+    } else if !dir_manifest.is_empty() && is_valid_dir(&dir_manifest) {
         Some(dir_manifest)
     } else {
         None
@@ -499,5 +544,17 @@ mod tests {
         let basis = get_basis_f("2ZaPa-NR-CV", args).expect("Failed to get basis set");
         let header = header_string(&basis);
         println!("Header:\n{header}");
+    }
+
+    #[test]
+    fn test_python_detection() {
+        // Test that Python detection works if basis_set_exchange is installed
+        let dir_python = get_bse_data_dir_python();
+        if let Some(dir) = dir_python {
+            println!("Python detected data directory: {dir}");
+            assert!(std::path::Path::new(&format!("{dir}/METADATA.json")).exists());
+        } else {
+            println!("Python basis_set_exchange package not available, skipping");
+        }
     }
 }
