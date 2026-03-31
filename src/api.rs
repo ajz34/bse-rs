@@ -509,6 +509,327 @@ pub fn get_formatted_basis_f(name: &str, fmt: &str, args: BseGetBasisArgs) -> Re
 
 /* #endregion */
 
+/// Return information about the basis set formats available for output.
+///
+/// This is a convenience wrapper that calls [`get_writer_formats`].
+///
+/// The returned data is a map of format name to display name. The format
+/// can be passed as the `fmt` argument to [`get_formatted_basis`].
+///
+/// # Arguments
+///
+/// * `function_types` - Optional list of function types to filter by. If
+///   provided, only formats supporting those types are returned.
+///
+/// # Example
+///
+/// ```
+/// use bse::prelude::*;
+/// let formats = get_formats(None);
+/// assert!(!formats.is_empty());
+/// assert!(formats.contains_key("nwchem"));
+/// ```
+pub fn get_formats(function_types: Option<Vec<String>>) -> HashMap<String, String> {
+    writers::write::get_writer_formats(function_types)
+}
+
+/// Return information about the available basis set roles.
+///
+/// The returned data is a map of role to display name. Roles represent
+/// different types of basis sets such as orbital, fitting, etc.
+///
+/// Available roles are:
+/// - `orbital`: Orbital basis
+/// - `jfit`: J-fitting
+/// - `jkfit`: JK-fitting
+/// - `rifit`: RI-fitting
+/// - `optri`: Optimized RI-fitting
+/// - `admmfit`: Auxiliary-Density Matrix Method Fitting
+/// - `dftxfit`: DFT Exchange Fitting
+/// - `dftjfit`: DFT Correlation Fitting
+/// - `guess`: Initial guess
+pub fn get_roles() -> HashMap<&'static str, &'static str> {
+    HashMap::from([
+        ("orbital", "Orbital basis"),
+        ("jfit", "J-fitting"),
+        ("jkfit", "JK-fitting"),
+        ("rifit", "RI-fitting"),
+        ("optri", "Optimized RI-fitting"),
+        ("admmfit", "Auxiliary-Density Matrix Method Fitting"),
+        ("dftxfit", "DFT Exchange Fitting"),
+        ("dftjfit", "DFT Correlation Fitting"),
+        ("guess", "Initial guess"),
+    ])
+}
+
+/* #endregion */
+
+/* #region get_basis_names_and_families */
+
+/// Obtain a list of all basis set names (display names).
+///
+/// The returned list contains the display names of all basis sets,
+/// sorted alphabetically.
+///
+/// # Arguments
+///
+/// * `data_dir` - Optional data directory. If None, uses the default (from
+///   `BSE_DATA_DIR` environment variable or auto-detected).
+///
+/// # Example
+///
+/// ```
+/// use bse::prelude::*;
+/// let names = get_all_basis_names(None);
+/// assert!(!names.is_empty());
+/// assert!(names.contains(&"STO-3G".to_string()));
+/// ```
+pub fn get_all_basis_names(data_dir: Option<String>) -> Vec<String> {
+    get_all_basis_names_f(data_dir).unwrap()
+}
+
+pub fn get_all_basis_names_f(data_dir: Option<String>) -> Result<Vec<String>, BseError> {
+    let data_dir = data_dir.or(get_bse_data_dir());
+    if data_dir.is_none() {
+        return bse_raise!(
+            DataNotFound,
+            "No data directory specified. Please set `BSE_DATA_DIR` environment variable."
+        );
+    }
+    let data_dir = data_dir.unwrap();
+
+    let metadata = get_metadata_f(&data_dir)?;
+    let names: Vec<String> = metadata.values().map(|v| v.display_name.clone()).sorted().collect();
+    Ok(names)
+}
+
+/// Return a list of all basis set families.
+///
+/// Families group related basis sets together (e.g., "pople", "dunning",
+/// "ahlrichs", etc.).
+///
+/// # Arguments
+///
+/// * `data_dir` - Optional data directory. If None, uses the default.
+///
+/// # Example
+///
+/// ```
+/// use bse::prelude::*;
+/// let families = get_families(None);
+/// assert!(!families.is_empty());
+/// assert!(families.contains(&"dunning".to_string()));
+/// ```
+pub fn get_families(data_dir: Option<String>) -> Vec<String> {
+    get_families_f(data_dir).unwrap()
+}
+
+pub fn get_families_f(data_dir: Option<String>) -> Result<Vec<String>, BseError> {
+    let data_dir = data_dir.or(get_bse_data_dir());
+    if data_dir.is_none() {
+        return bse_raise!(
+            DataNotFound,
+            "No data directory specified. Please set `BSE_DATA_DIR` environment variable."
+        );
+    }
+    let data_dir = data_dir.unwrap();
+
+    let metadata = get_metadata_f(&data_dir)?;
+    let families: HashSet<String> = metadata.values().map(|v| v.family.clone()).collect();
+    let families: Vec<String> = families.into_iter().sorted().collect();
+    Ok(families)
+}
+
+/// Lookup the name of an auxiliary basis set given a primary basis set and
+/// role.
+///
+/// This is useful for finding fitting basis sets that correspond to
+/// a given orbital basis set.
+///
+/// # Arguments
+///
+/// * `primary_basis` - The primary (orbital) basis set name (case insensitive)
+/// * `role` - Desired role/type of auxiliary basis set (case insensitive). Use
+///   [`get_roles`] to see available roles.
+/// * `data_dir` - Optional data directory.
+///
+/// # Returns
+///
+/// A list of auxiliary basis set names for the given primary basis and role.
+///
+/// # Example
+///
+/// ```
+/// use bse::prelude::*;
+/// let aux_names = lookup_basis_by_role("cc-pVTZ", "jkfit", None);
+/// assert!(!aux_names.is_empty());
+/// ```
+pub fn lookup_basis_by_role(primary_basis: &str, role: &str, data_dir: Option<String>) -> Vec<String> {
+    lookup_basis_by_role_f(primary_basis, role, data_dir).unwrap()
+}
+
+pub fn lookup_basis_by_role_f(
+    primary_basis: &str,
+    role: &str,
+    data_dir: Option<String>,
+) -> Result<Vec<String>, BseError> {
+    let data_dir = data_dir.or(get_bse_data_dir());
+    if data_dir.is_none() {
+        return bse_raise!(
+            DataNotFound,
+            "No data directory specified. Please set `BSE_DATA_DIR` environment variable."
+        );
+    }
+    let data_dir = data_dir.unwrap();
+
+    let role = role.to_lowercase();
+    let roles = get_roles();
+    if !roles.contains_key(role.as_str()) {
+        bse_raise!(ValueError, "Role '{role}' is not a valid role. Available roles: {:?}", roles.keys().collect_vec())?;
+    }
+
+    let bs_data = get_basis_metadata(primary_basis, &data_dir)?;
+    let auxdata = &bs_data.auxiliaries;
+
+    if !auxdata.contains_key(&role) {
+        bse_raise!(ValueError, "Role '{role}' doesn't exist for basis set '{primary_basis}'")?;
+    }
+
+    match &auxdata[&role] {
+        BseAuxiliary::Str(s) => Ok(vec![s.clone()]),
+        BseAuxiliary::Vec(v) => Ok(v.clone()),
+    }
+}
+
+/* #endregion */
+
+/* #region filter_basis_sets */
+
+/// Arguments for filtering basis sets.
+#[derive(Builder, Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[builder(build_fn(error = "BseError"), default)]
+pub struct BseFilterArgs {
+    /// Substring to search for in the basis set name
+    #[builder(default, setter(into))]
+    pub substr: Option<String>,
+
+    /// Family the basis set belongs to
+    #[builder(default, setter(into))]
+    pub family: Option<String>,
+
+    /// Role of the basis set
+    #[builder(default, setter(into))]
+    pub role: Option<String>,
+
+    /// List of elements that the basis set must include
+    #[builder(default, setter(into))]
+    pub elements: Option<String>,
+
+    /// Data directory
+    #[builder(default)]
+    pub data_dir: Option<String>,
+}
+
+/// Filter basis sets by various criteria.
+///
+/// All parameters are ANDed together (all must match for a basis set
+/// to be included in the result).
+///
+/// # Arguments
+///
+/// * `substr` - Substring to search for in the basis set name (case
+///   insensitive)
+/// * `family` - Family the basis set belongs to (case insensitive)
+/// * `role` - Role of the basis set (case insensitive)
+/// * `elements` - List of elements that the basis set must include. Elements
+///   can be specified by atomic number, symbol, or ranges (e.g., "1-3,6-8" or
+///   "H-Li,C-O").
+/// * `data_dir` - Optional data directory
+///
+/// # Returns
+///
+/// A HashMap of internal basis set names to their metadata.
+///
+/// # Example
+///
+/// ```
+/// use bse::prelude::*;
+/// let args = BseFilterArgsBuilder::default()
+///     .family("dunning")
+///     .substr("aug")
+///     .build()
+///     .unwrap();
+/// let filtered = filter_basis_sets(args);
+/// assert!(!filtered.is_empty());
+/// ```
+pub fn filter_basis_sets(args: BseFilterArgs) -> HashMap<String, BseRootMetadata> {
+    filter_basis_sets_f(args).unwrap()
+}
+
+pub fn filter_basis_sets_f(args: BseFilterArgs) -> Result<HashMap<String, BseRootMetadata>, BseError> {
+    let data_dir = args.data_dir.clone().or(get_bse_data_dir());
+    if data_dir.is_none() {
+        return bse_raise!(
+            DataNotFound,
+            "No data directory specified. Please set `BSE_DATA_DIR` environment variable."
+        );
+    }
+    let data_dir = data_dir.unwrap();
+
+    let mut metadata = get_metadata_f(&data_dir)?;
+
+    // Filter by family
+    if let Some(family) = &args.family {
+        let family = family.to_lowercase();
+        let families = get_families_f(Some(data_dir.clone()))?;
+        if !families.contains(&family) {
+            bse_raise!(ValueError, "Family '{family}' is not a valid family. Available families: {:?}", families)?;
+        }
+        metadata.retain(|_, v| v.family == family);
+    }
+
+    // Filter by role
+    if let Some(role) = &args.role {
+        let role = role.to_lowercase();
+        let roles = get_roles();
+        if !roles.contains_key(role.as_str()) {
+            bse_raise!(
+                ValueError,
+                "Role '{role}' is not a valid role. Available roles: {:?}",
+                roles.keys().collect_vec()
+            )?;
+        }
+        metadata.retain(|_, v| v.role == role);
+    }
+
+    // Filter by elements
+    if let Some(elements) = &args.elements {
+        let elements = misc::expand_elements_f(elements)?;
+        let elements_set: HashSet<i32> = HashSet::from_iter(elements.clone());
+
+        for (_, basis_data) in metadata.iter_mut() {
+            // Filter versions to those that contain all required elements
+            basis_data.versions.retain(|_, ver| {
+                let ver_elements: HashSet<i32> = ver.elements.iter().filter_map(|e| e.parse::<i32>().ok()).collect();
+                elements_set.is_subset(&ver_elements)
+            });
+        }
+
+        // Remove basis sets with no matching versions
+        metadata.retain(|_, v| !v.versions.is_empty());
+    }
+
+    // Filter by substring
+    if let Some(substr) = &args.substr {
+        let substr = substr.to_lowercase();
+        metadata.retain(|k, v| k.contains(&substr) || v.display_name.to_lowercase().contains(&substr));
+    }
+
+    Ok(metadata)
+}
+
+/* #endregion */
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -556,5 +877,70 @@ mod tests {
         } else {
             println!("Python basis_set_exchange package not available, skipping");
         }
+    }
+
+    #[test]
+    fn test_get_all_basis_names() {
+        let names = get_all_basis_names(None);
+        assert!(!names.is_empty());
+        // Should contain some well-known basis sets
+        assert!(names.iter().any(|n| n.contains("STO-3G")));
+        assert!(names.iter().any(|n| n.contains("cc-pVTZ")));
+        println!("Number of basis sets: {}", names.len());
+    }
+
+    #[test]
+    fn test_get_families() {
+        let families = get_families(None);
+        assert!(!families.is_empty());
+        assert!(families.contains(&"dunning".to_string()));
+        assert!(families.contains(&"pople".to_string()));
+        println!("Families: {:?}", families);
+    }
+
+    #[test]
+    fn test_get_roles() {
+        let roles = get_roles();
+        assert!(!roles.is_empty());
+        assert!(roles.contains_key("orbital"));
+        assert!(roles.contains_key("jkfit"));
+        println!("Roles: {:?}", roles);
+    }
+
+    #[test]
+    fn test_lookup_basis_by_role() {
+        // cc-pVTZ should have jkfit auxiliary
+        let aux_names = lookup_basis_by_role("cc-pVTZ", "jkfit", None);
+        assert!(!aux_names.is_empty());
+        println!("cc-pVTZ jkfit auxiliaries: {:?}", aux_names);
+    }
+
+    #[test]
+    fn test_filter_basis_sets() {
+        // Filter by family
+        let args = BseFilterArgsBuilder::default().family("dunning".to_string()).build().unwrap();
+        let filtered = filter_basis_sets(args);
+        assert!(!filtered.is_empty());
+        assert!(filtered.values().all(|v| v.family == "dunning"));
+        println!("Dunning family basis sets: {}", filtered.len());
+
+        // Filter by substring
+        let args = BseFilterArgsBuilder::default().substr("aug-cc-pV".to_string()).build().unwrap();
+        let filtered = filter_basis_sets(args);
+        assert!(!filtered.is_empty());
+        println!("Basis sets matching 'aug-cc-pV': {}", filtered.len());
+
+        // Filter by role
+        let args = BseFilterArgsBuilder::default().role("jkfit".to_string()).build().unwrap();
+        let filtered = filter_basis_sets(args);
+        assert!(!filtered.is_empty());
+        assert!(filtered.values().all(|v| v.role == "jkfit"));
+        println!("JK-fitting basis sets: {}", filtered.len());
+
+        // Filter by elements
+        let args = BseFilterArgsBuilder::default().elements("H-C".to_string()).build().unwrap();
+        let filtered = filter_basis_sets(args);
+        assert!(!filtered.is_empty());
+        println!("Basis sets covering H-C: {}", filtered.len());
     }
 }

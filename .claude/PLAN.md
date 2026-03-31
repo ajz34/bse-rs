@@ -12,14 +12,14 @@ These are essential for discoverability and querying available basis sets.
 
 | Function | Description | Status | File |
 |----------|-------------|--------|------|
-| `get_all_basis_names` | List all basis set names | ❌ TODO | `src/api.rs` |
-| `get_families` | List all basis set families | ❌ TODO | `src/api.rs` |
-| `filter_basis_sets` | Filter by substr, family, role, elements | ❌ TODO | `src/api.rs` |
-| `get_roles` | Return available roles (jfit, jkfit, rifit, etc.) | ❌ TODO | `src/api.rs` |
-| `lookup_basis_by_role` | Lookup auxiliary basis by role | ❌ TODO | `src/api.rs` |
-| `get_formats` | Return available writer formats | ❌ TODO | `src/api.rs` |
-| `get_reader_formats` | Return available reader formats | ❌ TODO | `src/readers/read.rs` |
-| `get_writer_formats` | Return available writer formats | ❌ TODO | `src/writers/write.rs` |
+| `get_all_basis_names` | List all basis set names | ✅ DONE | `src/api.rs` |
+| `get_families` | List all basis set families | ✅ DONE | `src/api.rs` |
+| `filter_basis_sets` | Filter by substr, family, role, elements | ✅ DONE | `src/api.rs` |
+| `get_roles` | Return available roles (jfit, jkfit, rifit, etc.) | ✅ DONE | `src/api.rs` |
+| `lookup_basis_by_role` | Lookup auxiliary basis by role | ✅ DONE | `src/api.rs` |
+| `get_formats` | Return available writer formats | ✅ DONE | `src/api.rs` |
+| `get_reader_formats` | Return available reader formats | ✅ DONE | `src/readers/read.rs` |
+| `get_writer_formats` | Return available writer formats | ✅ DONE | `src/writers/write.rs` |
 
 ---
 
@@ -130,5 +130,5 @@ Notes provide important context about basis sets and families.
 ## Progress Tracking
 
 - Last updated: 2026-03-31
-- Completed items: 0
+- Completed items: 8 (Priority 1 complete)
 - Total items tracked: ~40

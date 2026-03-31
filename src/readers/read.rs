@@ -2,6 +2,23 @@
 
 use crate::prelude::*;
 
+/// Format information for a reader.
+#[allow(dead_code)]
+struct ReaderFormat {
+    display: &'static str,
+    extension: &'static str,
+}
+
+fn reader_format_map() -> HashMap<&'static str, ReaderFormat> {
+    HashMap::from([
+        ("nwchem", ReaderFormat { display: "NWChem", extension: ".nw" }),
+        ("gaussian94", ReaderFormat { display: "Gaussian94", extension: ".gbs" }),
+        ("g94", ReaderFormat { display: "Gaussian94", extension: ".gbs" }),
+        ("turbomole", ReaderFormat { display: "Turbomole", extension: ".tm" }),
+        ("dalton", ReaderFormat { display: "Dalton", extension: ".mol" }),
+    ])
+}
+
 #[allow(dead_code)]
 struct Reader {
     display: &'static str,
@@ -21,6 +38,25 @@ fn reader_map(fmt: &str) -> Option<Reader> {
         "dalton" => Some(Reader { display: "Dalton", extension: ".mol", function: readers::dalton::read_dalton }),
         _ => None,
     }
+}
+
+/// Return information about the basis set formats available for reading.
+///
+/// The returned data is a map of format name to display name. The format
+/// name can be passed as the `fmt` argument to [`read_formatted_basis_str`].
+///
+/// # Example
+///
+/// ```
+/// use bse::prelude::*;
+/// let formats = get_reader_formats();
+/// assert!(!formats.is_empty());
+/// assert!(formats.contains_key("nwchem"));
+/// println!("Available reader formats: {:?}", formats);
+/// ```
+pub fn get_reader_formats() -> HashMap<String, String> {
+    let format_map = reader_format_map();
+    format_map.into_iter().map(|(k, v)| (k.to_string(), v.display.to_string())).collect()
 }
 
 pub fn read_formatted_basis_str(basis_str: &str, fmt: &str) -> BseBasisMinimal {
