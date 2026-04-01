@@ -19,7 +19,12 @@ This is a Rust reimplementation of the Python [Basis Set Exchange](https://githu
 
 ### Required Environment Variable
 
+You need to make sure your python environment contains `basis-set-exchange` package (can be installed via pypi).
+
+If you do not have the package installed, you can set the `BSE_DATA_DIR` environment variable to point to the data directory of the Python BSE repository:
+
 ```bash
+# Adjust this path to match the location of the basis_set_exchange repository on your system
 export BSE_DATA_DIR=/home/a/Git-Others/basis_set_exchange/basis_set_exchange/data
 ```
 
@@ -28,15 +33,14 @@ This points to the Python BSE data directory containing basis set JSON files.
 ### Running Tests
 
 ```bash
-# Run all tests (127 tests total)
 # the following directory may change to match the location of the basis_set_exchange repository on your system
-BSE_DATA_DIR=/home/a/Git-Others/basis_set_exchange/basis_set_exchange/data cargo test
+cargo test
 
 # Run specific test file
-BSE_DATA_DIR=... cargo test --test test_get_basis
+cargo test --test test_get_basis
 
 # Run with verbose output
-BSE_DATA_DIR=... cargo test -- --nocapture
+cargo test -- --nocapture
 ```
 
 ### Test Structure
