@@ -36,6 +36,12 @@ fn parse_electron_lines(
     }
     let basis_lines = &basis_lines[..basis_lines.len() - 1];
 
+    // Handle empty basis sections (e.g., for ECP-only basis sets like def2-ECP)
+    // After pruning $ and the terminating *, we may have an empty or minimal list
+    if basis_lines.is_empty() || basis_lines.iter().all(|x| x == "*" || x.is_empty()) {
+        return Ok(()); // No electron shells to parse
+    }
+
     // Partition based on lines beginning with a character
     let element_blocks =
         helpers::partition_lines(basis_lines, |x| ELEMENT_RE.is_match(x), 1, None, None, None, 4, true)?;
