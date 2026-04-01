@@ -7,7 +7,8 @@ fn test_get_basis_notes_3_21_g() {
     let ref_file = format!("{manifest_dir}/tests/python_ref/get_notes/basis_notes_3-21G.txt");
 
     let notes = get_basis_notes("3-21G", None);
-    let ref_str = read_to_string(&ref_file).expect("Reference file not found. Run tests/python_ref/get_notes.py first.");
+    let ref_str =
+        read_to_string(&ref_file).expect("Reference file not found. Run tests/python_ref/get_notes.py first.");
 
     // Compare line by line for better debugging
     let rust_lines: Vec<&str> = notes.lines().collect();
@@ -32,7 +33,8 @@ fn test_get_basis_notes_def2_svp() {
     let ref_file = format!("{manifest_dir}/tests/python_ref/get_notes/basis_notes_def2-SVP.txt");
 
     let notes = get_basis_notes("def2-SVP", None);
-    let ref_str = read_to_string(&ref_file).expect("Reference file not found. Run tests/python_ref/get_notes.py first.");
+    let ref_str =
+        read_to_string(&ref_file).expect("Reference file not found. Run tests/python_ref/get_notes.py first.");
 
     assert_eq!(notes, ref_str);
 }
@@ -43,7 +45,8 @@ fn test_get_family_notes_ahlrichs() {
     let ref_file = format!("{manifest_dir}/tests/python_ref/get_notes/family_notes_ahlrichs.txt");
 
     let notes = get_family_notes("ahlrichs", None);
-    let ref_str = read_to_string(&ref_file).expect("Reference file not found. Run tests/python_ref/get_notes.py first.");
+    let ref_str =
+        read_to_string(&ref_file).expect("Reference file not found. Run tests/python_ref/get_notes.py first.");
 
     assert_eq!(notes, ref_str);
 }
@@ -54,7 +57,8 @@ fn test_get_family_notes_dunning() {
     let ref_file = format!("{manifest_dir}/tests/python_ref/get_notes/family_notes_dunning.txt");
 
     let notes = get_family_notes("dunning", None);
-    let ref_str = read_to_string(&ref_file).expect("Reference file not found. Run tests/python_ref/get_notes.py first.");
+    let ref_str =
+        read_to_string(&ref_file).expect("Reference file not found. Run tests/python_ref/get_notes.py first.");
 
     assert_eq!(notes, ref_str);
 }

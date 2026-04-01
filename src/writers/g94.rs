@@ -13,17 +13,27 @@ fn write_g94_common(basis: &BseBasis, add_harm_type: bool, psi4_am: bool, system
     let mut s: Vec<String> = vec![];
 
     // Elements for which we have electron basis
-    let electron_elements =
-        basis.elements.iter().filter_map(|(k, v)| v.electron_shells.as_ref().map(|_| k)).sorted().collect_vec();
+    let electron_elements = basis
+        .elements
+        .iter()
+        .filter_map(|(k, v)| v.electron_shells.as_ref().map(|_| k.parse::<i32>().unwrap()))
+        .sorted()
+        .map(|z| z.to_string())
+        .collect_vec();
 
     // Elements for which we have ECP
-    let ecp_elements =
-        basis.elements.iter().filter_map(|(k, v)| v.ecp_potentials.as_ref().map(|_| k)).sorted().collect_vec();
+    let ecp_elements = basis
+        .elements
+        .iter()
+        .filter_map(|(k, v)| v.ecp_potentials.as_ref().map(|_| k.parse::<i32>().unwrap()))
+        .sorted()
+        .map(|z| z.to_string())
+        .collect_vec();
 
     // Electron Basis
     if !electron_elements.is_empty() {
-        for z in electron_elements {
-            let data = &basis.elements[z];
+        for z in &electron_elements {
+            let data = &basis.elements[z.as_str()];
             let shells = data.electron_shells.as_ref().unwrap();
 
             let sym = lut::element_sym_from_Z_with_normalize(z.parse().unwrap()).unwrap();
@@ -65,8 +75,8 @@ fn write_g94_common(basis: &BseBasis, add_harm_type: bool, psi4_am: bool, system
     // Write out ECP
     if !ecp_elements.is_empty() {
         s.push("".to_string());
-        for z in ecp_elements {
-            let data = &basis.elements[z];
+        for z in &ecp_elements {
+            let data = &basis.elements[z.as_str()];
             let sym = lut::element_sym_from_Z(z.parse().unwrap()).unwrap().to_uppercase();
             let ecp_potentials = data.ecp_potentials.as_ref().unwrap();
             let max_ecp_am = ecp_potentials.iter().map(|x| x.angular_momentum[0]).max().unwrap();

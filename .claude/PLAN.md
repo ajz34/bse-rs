@@ -91,7 +91,7 @@ Notes provide important context about basis sets and families.
 | Function | Description | Status | File |
 |----------|-------------|--------|------|
 | `remove_primitive` | Remove a primitive by index | ❌ TODO | `src/manip.rs` |
-| `truhlar_calendarize` | Create "month" basis sets (jul, jun, etc.) | ❌ TODO | `src/manip.rs` |
+| `truhlar_calendarize` | Create "month" basis sets (jul, jun, etc.) | ✅ DONE | `src/manip.rs` |
 | `merge_element_data` | Merge basis data from multiple sources | ❌ TODO | `src/manip.rs` |
 | `create_element_data` | Helper for creating element data | ❌ TODO | `src/manip.rs` |
 

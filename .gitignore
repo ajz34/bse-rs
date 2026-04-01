@@ -1,4 +1,5 @@
 tests/python_ref/**/*.json
+tests/python_ref/**/*.g94
 tests/python_ref/**/*.txt
 tests/*.json
 

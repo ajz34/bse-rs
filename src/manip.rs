@@ -986,6 +986,180 @@ pub fn autoabs_basis(basis: &BseBasis, lmaxinc: i32, fsam: f64) -> BseBasis {
     }
 }
 
+/// Remove a primitive (by index) from an electron shell.
+///
+/// Modifies the shell in place, removing the exponent at the given index
+/// and its corresponding coefficients from all contraction vectors.
+/// Also removes general contractions if all coefficients become zero.
+fn remove_primitive(shell: &mut BseElectronShell, idx_to_remove: usize) {
+    shell.exponents.remove(idx_to_remove);
+    for coeff in shell.coefficients.iter_mut() {
+        coeff.remove(idx_to_remove);
+    }
+
+    // Remove general contractions if all coefficients are zero
+    shell.coefficients =
+        shell.coefficients.iter().filter(|gen| gen.iter().any(|c| c.parse::<f64>().unwrap() != 0.0)).cloned().collect();
+}
+
+/// Enum specifying how many diffuse functions to remove.
+enum DiffuseRemoval {
+    /// Remove all diffuse functions.
+    All,
+    /// Remove a specific number of diffuse functions.
+    Count(i32),
+}
+
+/// Remove diffuse functions from an element's electron shells.
+///
+/// Removes the most diffuse primitive(s) from shells with the highest
+/// angular momenta. The number of diffuse functions to remove is specified
+/// by `nremove`.
+///
+/// # Arguments
+///
+/// * `eldata` - The element data containing electron shells (modified in place)
+/// * `nremove` - Number of diffuse functions to remove. Can be a number or
+///   "all" to remove all diffuse functions.
+fn element_remove_diffuse(eldata: &mut BseBasisElement, nremove: DiffuseRemoval) {
+    let Some(shells) = &mut eldata.electron_shells else {
+        return;
+    };
+
+    let max_am = misc::max_am(shells);
+    let nremove_val = match nremove {
+        DiffuseRemoval::All => max_am + 1,
+        DiffuseRemoval::Count(n) => n,
+    };
+
+    // Build list of angular momenta to remove (from highest to lowest)
+    let am_toremove: Vec<i32> = (max_am - nremove_val + 1..=max_am).filter(|x| *x >= 0).collect();
+
+    for shell in shells.iter_mut() {
+        let shell_am = &shell.angular_momentum;
+
+        // Cannot remove diffuse from fused shell (sp, spd, etc)
+        if shell_am.len() > 1 {
+            panic!("Cannot remove diffuse functions from fused shell: {:?}", shell_am);
+        }
+
+        let shell_am_val = shell_am[0];
+        if !am_toremove.contains(&shell_am_val) {
+            continue;
+        }
+
+        // Find the most diffuse function and remove it
+        let exponents: Vec<(f64, usize)> =
+            shell.exponents.iter().enumerate().map(|(idx, x)| (x.parse::<f64>().unwrap(), idx)).collect();
+
+        // Sort by exponent (ascending - smallest is most diffuse)
+        let mut sorted_exponents = exponents;
+        sorted_exponents.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+
+        // Get the index of the most diffuse exponent
+        let (_, diffuse_idx) = sorted_exponents[0];
+
+        remove_primitive(shell, diffuse_idx);
+    }
+}
+
+/// Create the Truhlar "calendar" basis sets from an augmented basis set.
+///
+/// The Truhlar calendar basis sets (jul, jun, may, apr, mar, feb, jan) are
+/// derived from augmented Dunning basis sets by progressively removing
+/// diffuse functions.
+///
+/// The naming convention uses months, going backwards through the calendar:
+/// - `jul` (July): Remove all diffuse functions from H, He only
+/// - `jun` (June): Remove 1 diffuse function from all elements (except H, He)
+/// - `may` (May): Remove 2 diffuse functions from all elements (except H, He)
+/// - ... and so on
+///
+/// # Arguments
+///
+/// * `basis` - The augmented basis set to modify
+/// * `month` - The target month ("jul", "jun", "may", "apr", "mar", "feb",
+///   "jan")
+///
+/// # Returns
+///
+/// A new basis set with the appropriate diffuse functions removed.
+///
+/// # Errors
+///
+/// Returns an error if the month is invalid or if too many diffuse functions
+/// would be removed for the given basis set.
+///
+/// # See also
+///
+/// E. Papajak, J. Zheng, X. Xu, H. R. Leverentz, D. G. Truhlar
+/// 'Assessment of the accuracy of density functionals for prediction
+/// of relative energies and geometries of optimized structures'
+/// J. Chem. Theory Comput. 7, 3027 (2011)
+/// <https://doi.org/10.1021/ct200106n>
+pub fn truhlar_calendarize(basis: &BseBasis, month: &str) -> Result<BseBasis, BseError> {
+    let valid_months = ["jul", "jun", "may", "apr", "mar", "feb", "jan"];
+    let month_lower = month.to_lowercase();
+    if !valid_months.contains(&month_lower.as_str()) {
+        return bse_raise!(ValueError, "Month '{}' is not valid for truhlar calendarization", month);
+    }
+
+    // Make a copy and make general contractions
+    let mut basis = basis.clone();
+    make_general(&mut basis, false);
+
+    // Find the max am for the entire basis
+    let all_am: Vec<i32> = basis
+        .elements
+        .values()
+        .filter_map(|el| el.electron_shells.as_ref())
+        .map(|shells| misc::max_am(shells))
+        .collect();
+    let basis_max_am = all_am.iter().max().copied().unwrap_or(0);
+
+    // Figure out what to remove
+    // The index represents the offset from jul (index('jul') = 0)
+    // This offset represents how many diffuse functions to remove from each element
+    let month_offset = valid_months.iter().position(|m| *m == month_lower.as_str()).unwrap() as i32;
+
+    // Check that we're not removing too many diffuse functions
+    // For a given basis_max_am, there will be (basis_max_am+1) diffuse functions
+    if month_offset > basis_max_am {
+        return bse_raise!(
+            ValueError,
+            "Will not remove {} diffuse functions for basis with max am = {}",
+            month_offset,
+            basis_max_am
+        );
+    }
+
+    // jul = same as aug, except remove all diffuse from H,He
+    // First, remove diffuse functions from H,He (this always happens)
+    for el_z in ["1", "2"] {
+        if let Some(eldata) = basis.elements.get_mut(el_z) {
+            element_remove_diffuse(eldata, DiffuseRemoval::All);
+        }
+    }
+
+    // Short circuit if we are doing jul
+    if month_offset == 0 {
+        prune_basis(&mut basis);
+        return Ok(basis);
+    }
+
+    // Now handle the rest of the elements
+    for (el_z, eldata) in basis.elements.iter_mut() {
+        if el_z == "1" || el_z == "2" {
+            continue;
+        }
+
+        element_remove_diffuse(eldata, DiffuseRemoval::Count(month_offset));
+    }
+
+    prune_basis(&mut basis);
+    Ok(basis)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
