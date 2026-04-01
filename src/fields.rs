@@ -329,6 +329,31 @@ pub struct BseBasisMinimal {
     pub description: String,
 }
 
+impl BseBasis {
+    /// Create a BseBasis from a BseBasisMinimal.
+    ///
+    /// This is useful for readers that return minimal basis set data,
+    /// which can then be used with manipulation functions that require
+    /// full BseBasis.
+    pub fn from_minimal(minimal: BseBasisMinimal) -> Self {
+        BseBasis {
+            molssi_bse_schema: minimal.molssi_bse_schema,
+            revision_description: String::new(),
+            revision_date: String::new(),
+            elements: minimal.elements,
+            version: String::new(),
+            function_types: minimal.function_types,
+            names: vec![minimal.name.clone()],
+            tags: Vec::new(),
+            family: String::new(),
+            description: minimal.description,
+            role: "orbital".to_string(),
+            auxiliaries: HashMap::new(),
+            name: minimal.name,
+        }
+    }
+}
+
 /* #endregion */
 
 /* #region ser/de implementation */

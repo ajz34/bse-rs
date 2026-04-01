@@ -77,5 +77,9 @@ pub mod references;
 pub mod sort;
 pub mod writers;
 
+// Re-export commonly used items at crate root for convenience
+pub use error::BseError;
+pub use prelude::*;
+
 #[cfg(feature = "remote")]
 pub mod client;
