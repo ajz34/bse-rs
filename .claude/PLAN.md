@@ -78,11 +78,11 @@ Notes provide important context about basis sets and families.
 
 | Format | Description | Status | File |
 |--------|-------------|--------|------|
-| `molcas_library` | Molcas basis library format | ❌ TODO | `src/writers/molcas.rs` |
-| `libmol` | Molpro system library | ❌ TODO | `src/writers/libmol.rs` |
-| `bsedebug` | BSE debug format | ❌ TODO | `src/writers/bsedebug.rs` |
-| `bsejson` | Native JSON output | ❌ TODO | `src/writers/bsejson.rs` |
-| `ricdwrap` | Wrapper for acCD auxiliary basis | ❌ TODO | `src/writers/ricdwrap.rs` |
+| `molcas_library` | Molcas basis library format | ✅ DONE | `src/writers/molcas_library.rs` |
+| `libmol` | Molpro system library | ✅ DONE | `src/writers/libmol.rs` |
+| `bsedebug` | BSE debug format | ✅ DONE | `src/writers/bsedebug.rs` |
+| `bsejson` | Native JSON output | ✅ DONE | `src/writers/bsejson.rs` |
+| `ricdwrap` | Wrapper for acCD auxiliary basis | ✅ DONE | `src/writers/ricdwrap.rs` |
 
 ---
 
@@ -132,5 +132,5 @@ Notes provide important context about basis sets and families.
 ## Progress Tracking
 
 - Last updated: 2026-04-01
-- Completed items: 18 (Priority 1, 2, and 4 mostly complete)
+- Completed items: 23 (Priority 1, 2, 4, and 5 complete)
 - Total items tracked: ~40

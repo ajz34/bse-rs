@@ -157,6 +157,36 @@ fn writer_format_map() -> HashMap<&'static str, WriterFormat> {
             comment: "!",
             valid: vec!["gto", "gto_spherical"],
         }),
+        ("molcas_library", WriterFormat {
+            display: "Molcas basis library",
+            extension: ".molcas",
+            comment: "",
+            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        }),
+        ("libmol", WriterFormat {
+            display: "Molpro system library",
+            extension: ".libmol",
+            comment: "!",
+            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        }),
+        ("bsedebug", WriterFormat {
+            display: "BSE Debug",
+            extension: ".debug",
+            comment: "#",
+            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        }),
+        ("bsejson", WriterFormat {
+            display: "BSE JSON",
+            extension: ".json",
+            comment: "",
+            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        }),
+        ("ricdwrap", WriterFormat {
+            display: "acCD auxiliary basis wrapper",
+            extension: ".molcas",
+            comment: "*",
+            valid: vec!["gto", "gto_cartesian", "gto_spherical"],
+        }),
     ])
 }
 
@@ -339,6 +369,41 @@ fn writer_map(fmt: &str) -> Option<Writer> {
             comment: "!",
             valid: vec!["gto", "gto_spherical"],
             function: writers::veloxchem::write_veloxchem,
+        }),
+        "molcas_library" => Some(Writer {
+            display: "Molcas basis library",
+            extension: ".molcas",
+            comment: "",
+            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+            function: writers::molcas_library::write_molcas_library,
+        }),
+        "libmol" => Some(Writer {
+            display: "Molpro system library",
+            extension: ".libmol",
+            comment: "!",
+            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+            function: writers::libmol::write_libmol,
+        }),
+        "bsedebug" => Some(Writer {
+            display: "BSE Debug",
+            extension: ".debug",
+            comment: "#",
+            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+            function: writers::bsedebug::write_bsedebug,
+        }),
+        "bsejson" => Some(Writer {
+            display: "BSE JSON",
+            extension: ".json",
+            comment: "",
+            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+            function: writers::bsejson::write_bsejson,
+        }),
+        "ricdwrap" => Some(Writer {
+            display: "acCD auxiliary basis wrapper",
+            extension: ".molcas",
+            comment: "*",
+            valid: vec!["gto", "gto_cartesian", "gto_spherical"],
+            function: writers::ricdwrap::write_ricdwrap,
         }),
         _ => None,
     }

@@ -77,6 +77,16 @@ cfgs = [
     ("crystal"       , "cc-pVTZ"    , {"elements": "1, 6-O"    , "fmt": "crystal"}),
     ("crystal"       , "def2-TZVPD" , {"elements": "1-3, 49-51", "fmt": "crystal"}),
     ("veloxchem"     , "cc-pVTZ"    , {"elements": "1, 6-O"    , "fmt": "veloxchem"}),
+    ("libmol"        , "cc-pVTZ"    , {"elements": "1, 6-O"    , "fmt": "libmol"}),
+    ("libmol"        , "def2-ECP"   , {"elements": "49-51"     , "fmt": "libmol"}),
+    ("libmol"        , "def2-TZVPD" , {"elements": "1-3, 49-51", "fmt": "libmol"}),
+    ("bsedebug"      , "cc-pVTZ"    , {"elements": "1, 6-O"    , "fmt": "bsedebug"}),
+    ("bsedebug"      , "def2-ECP"   , {"elements": "49-51"     , "fmt": "bsedebug"}),
+    ("bsedebug"      , "def2-TZVPD" , {"elements": "1-3, 49-51", "fmt": "bsedebug"}),
+    ("bsejson"       , "cc-pVTZ"    , {"elements": "1, 6-O"    , "fmt": "json"}),
+    ("bsejson"       , "def2-ECP"   , {"elements": "49-51"     , "fmt": "json"}),
+    ("bsejson"       , "def2-TZVPD" , {"elements": "1-3, 49-51", "fmt": "json"}),
+    ("ricdwrap"      , "cc-pVTZ"    , {"elements": "1-3"       , "fmt": "ricdwrap"}),
 ]
 
 # # %%time

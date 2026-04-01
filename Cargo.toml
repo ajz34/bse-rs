@@ -21,6 +21,7 @@ regex = { version = "1.11" }
 libm = { version = "0.2" }
 md5 = { version = "0.8" }
 ureq = { version = "3.0", features = ["json"], optional = true }
+deunicode = { version = "1.6" }
 
 [features]
 default = ["remote"]
