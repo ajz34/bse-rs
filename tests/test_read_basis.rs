@@ -23,11 +23,19 @@ mod tests {
     #[case("molpro"        , "molpro"        , "def2-ECP"  , ["elements = '49-51'"     ].join("\n"))]
     #[case("cfour"         , "cfour"         , "cc-pVDZ"   , ["elements = '1, 6-O'"    ].join("\n"))]
     #[case("cfour"         , "cfour"         , "def2-ECP"  , ["elements = '49-51'"     ].join("\n"))]
-    #[case("gamess_us"      , "gamess_us"      , "cc-pVDZ"   , ["elements = '1, 6-O'"    ].join("\n"))]
-    #[case("gamess_us"      , "gamess_us"      , "def2-ECP"  , ["elements = '49-51'"     ].join("\n"))]
-    #[case("cp2k"          , "cp2k"           , "cc-pVTZ"   , ["elements = '1, 6-O'"    ].join("\n"))]
-    #[case("cp2k"          , "cp2k"           , "def2-ECP"  , ["elements = '49-51'"     ].join("\n"))]
-    #[case("crystal"       , "crystal"        , "def2-SVP"  , ["elements = '1, 6-O'"    ].join("\n"))]
+    #[case("gamess_us"     , "gamess_us"     , "cc-pVDZ"   , ["elements = '1, 6-O'"    ].join("\n"))]
+    #[case("gamess_us"     , "gamess_us"     , "def2-ECP"  , ["elements = '49-51'"     ].join("\n"))]
+    #[case("cp2k"          , "cp2k"          , "cc-pVTZ"   , ["elements = '1, 6-O'"    ].join("\n"))]
+    #[case("cp2k"          , "cp2k"          , "def2-ECP"  , ["elements = '49-51'"     ].join("\n"))]
+    #[case("crystal"       , "crystal"       , "def2-SVP"  , ["elements = '1, 6-O'"    ].join("\n"))]
+    // New readers with corresponding writers
+    #[case("libmol"        , "libmol"        , "cc-pVTZ"   , ["elements = '1, 6-O'"    ].join("\n"))]
+    #[case("libmol"        , "libmol"        , "def2-ECP"  , ["elements = '49-51'"     ].join("\n"))]
+    #[case("demon2k"       , "demon2k"       , "cc-pVDZ"   , ["elements = '1, 6-O'"    ].join("\n"))]
+    #[case("demon2k"       , "demon2k"       , "def2-ECP"  , ["elements = '49-51'"     ].join("\n"))]
+    #[case("veloxchem"     , "veloxchem"     , "cc-pVDZ"   , ["elements = '1, 6-O'"    ].join("\n"))]
+    #[case("bsejson"       , "bsejson"       , "cc-pVTZ"   , ["elements = '1, 6-O'"    ].join("\n"))]
+    #[case("bsejson"       , "bsejson"       , "def2-ECP"  , ["elements = '49-51'"     ].join("\n"))]
     fn test_get_basis(#[case] scene: &str, #[case] dump_fmt: &str, #[case] basis: &str, #[case] args: String) {
         let manifest_dir = env!("CARGO_MANIFEST_DIR");
         let ref_file = format!("{manifest_dir}/tests/python_ref/read_basis_fmt/{basis}-{scene}.json");

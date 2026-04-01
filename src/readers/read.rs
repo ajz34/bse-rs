@@ -24,6 +24,13 @@ fn reader_format_map() -> HashMap<&'static str, ReaderFormat> {
         ("gamess_us", ReaderFormat { display: "GAMESS US", extension: ".gms" }),
         ("cp2k", ReaderFormat { display: "CP2K", extension: ".cp2k" }),
         ("crystal", ReaderFormat { display: "Crystal", extension: ".crystal" }),
+        ("libmol", ReaderFormat { display: "Libmol", extension: ".libmol" }),
+        ("gbasis", ReaderFormat { display: "GBasis", extension: ".gbas" }),
+        ("demon2k", ReaderFormat { display: "deMon2k", extension: ".dmon" }),
+        ("veloxchem", ReaderFormat { display: "VeloxChem", extension: ".vx" }),
+        ("ricdlib", ReaderFormat { display: "RICDlib", extension: ".ricd" }),
+        ("json", ReaderFormat { display: "JSON", extension: ".json" }),
+        ("bsejson", ReaderFormat { display: "BSE JSON", extension: ".json" }),
     ])
 }
 
@@ -55,6 +62,16 @@ fn reader_map(fmt: &str) -> Option<Reader> {
         "cp2k" => Some(Reader { display: "CP2K", extension: ".cp2k", function: readers::cp2k::read_cp2k }),
         "crystal" => {
             Some(Reader { display: "Crystal", extension: ".crystal", function: readers::crystal::read_crystal })
+        },
+        "libmol" => Some(Reader { display: "Libmol", extension: ".libmol", function: readers::libmol::read_libmol }),
+        "gbasis" => Some(Reader { display: "GBasis", extension: ".gbas", function: readers::gbasis::read_gbasis }),
+        "demon2k" => Some(Reader { display: "deMon2k", extension: ".dmon", function: readers::demon2k::read_demon2k }),
+        "veloxchem" => {
+            Some(Reader { display: "VeloxChem", extension: ".vx", function: readers::veloxchem::read_veloxchem })
+        },
+        "ricdlib" => Some(Reader { display: "RICDlib", extension: ".ricd", function: readers::ricdlib::read_ricdlib }),
+        "json" | "bsejson" => {
+            Some(Reader { display: "JSON", extension: ".json", function: readers::bsejson::read_bsejson })
         },
         _ => None,
     }
