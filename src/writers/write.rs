@@ -20,423 +20,413 @@ pub fn strip_dir_prefix(fmt: &str) -> &str {
     }
 }
 
-/// Format information for a writer.
-#[allow(dead_code)]
-struct WriterFormat {
-    display: &'static str,
-    extension: &'static str,
-    comment: &'static str,
-    valid: Vec<&'static str>,
+/// Writer format information.
+#[derive(Clone, Copy)]
+pub struct WriterInfo {
+    /// Canonical format name
+    pub name: &'static str,
+    /// Display name for the format
+    pub display: &'static str,
+    /// File extension for the format
+    pub extension: &'static str,
+    /// Comment character for the format
+    pub comment: &'static str,
+    /// Valid function types for this format
+    pub valid: &'static [&'static str],
+    /// Aliases for this format (including extension if unique)
+    pub aliases: &'static [&'static str],
 }
 
-fn writer_format_map() -> HashMap<&'static str, WriterFormat> {
-    HashMap::from([
-        ("nwchem", WriterFormat {
-            display: "NWChem",
-            extension: ".nw",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("gaussian94", WriterFormat {
-            display: "Gaussian",
-            extension: ".gbs",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("gaussian94lib", WriterFormat {
-            display: "Gaussian, system library",
-            extension: ".gbs",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("psi4", WriterFormat {
-            display: "Psi4",
-            extension: ".gbs",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("molcas", WriterFormat {
-            display: "Molcas",
-            extension: ".molcas",
-            comment: "*",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("qchem", WriterFormat {
-            display: "Q-Chem",
-            extension: ".qchem",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("orca", WriterFormat {
-            display: "ORCA",
-            extension: ".orca",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("dalton", WriterFormat {
-            display: "Dalton",
-            extension: ".dalton",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("qcschema", WriterFormat {
-            display: "QCSchema",
-            extension: ".json",
-            comment: "",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("cp2k", WriterFormat {
-            display: "CP2K",
-            extension: ".cp2k",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("pqs", WriterFormat {
-            display: "PQS",
-            extension: ".pqs",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("demon2k", WriterFormat {
-            display: "deMon2K",
-            extension: ".d2k",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("gamess_us", WriterFormat {
-            display: "GAMESS US",
-            extension: ".bas",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("turbomole", WriterFormat {
-            display: "Turbomole",
-            extension: ".tm",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("gamess_uk", WriterFormat {
-            display: "GAMESS UK",
-            extension: ".bas",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("molpro", WriterFormat {
-            display: "Molpro",
-            extension: ".mpro",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("cfour", WriterFormat {
-            display: "CFOUR",
-            extension: ".c4bas",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("acesii", WriterFormat {
-            display: "ACES II",
-            extension: ".acesii",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("xtron", WriterFormat {
-            display: "xTron",
-            extension: ".gbs",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("bdf", WriterFormat {
-            display: "BDF",
-            extension: ".bdf",
-            comment: "*",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("fhiaims", WriterFormat {
-            display: "FHI-aims",
-            extension: ".fhiaims",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical"],
-        }),
-        ("jaguar", WriterFormat {
-            display: "Jaguar",
-            extension: ".jaguar",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("crystal", WriterFormat {
-            display: "CRYSTAL",
-            extension: ".crystal",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("veloxchem", WriterFormat {
-            display: "VeloxChem",
-            extension: ".vlx",
-            comment: "!",
-            valid: vec!["gto", "gto_spherical"],
-        }),
-        ("molcas_library", WriterFormat {
-            display: "Molcas basis library",
-            extension: ".molcas",
-            comment: "",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("libmol", WriterFormat {
-            display: "Molpro system library",
-            extension: ".libmol",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("bsedebug", WriterFormat {
-            display: "BSE Debug",
-            extension: ".debug",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("bsejson", WriterFormat {
-            display: "BSE JSON",
-            extension: ".json",
-            comment: "",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("json", WriterFormat {
-            display: "JSON",
-            extension: ".json",
-            comment: "",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        }),
-        ("ricdwrap", WriterFormat {
-            display: "acCD auxiliary basis wrapper",
-            extension: ".molcas",
-            comment: "*",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical"],
-        }),
-    ])
+impl WriterInfo {
+    /// Get the file extension without the leading dot.
+    pub fn extension_without_dot(&self) -> &'static str {
+        self.extension.trim_start_matches('.')
+    }
+
+    /// Check if the given function types are valid for this format.
+    pub fn supports_function_types(&self, ftypes: &HashSet<String>) -> bool {
+        if self.valid.is_empty() {
+            return true;
+        }
+        let valid_types: HashSet<String> = self.valid.iter().map(|s| s.to_string()).collect();
+        ftypes.is_subset(&valid_types)
+    }
+
+    /// Check if a given name is an alias for this format.
+    pub fn is_alias(&self, name: &str) -> bool {
+        self.aliases.iter().any(|a| a.eq_ignore_ascii_case(name))
+    }
 }
 
-#[allow(dead_code)]
-struct Writer {
+/// Writer entry with all format information.
+#[derive(Clone, Copy)]
+struct WriterEntry {
+    /// Canonical format name
+    name: &'static str,
+    /// Display name for the format
     display: &'static str,
+    /// File extension for the format
     extension: &'static str,
+    /// Comment character for the format
     comment: &'static str,
-    valid: Vec<&'static str>,
+    /// Valid function types for this format
+    valid: &'static [&'static str],
+    /// All valid names for this format (canonical + aliases)
+    names: &'static [&'static str],
+    /// Writer function
     function: fn(&BseBasis) -> String,
 }
 
-fn writer_map(fmt: &str) -> Option<Writer> {
-    let fmt = fmt.to_lowercase();
-    match fmt.as_str() {
-        "nwchem" => Some(Writer {
-            display: "NWChem",
-            extension: ".nw",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::nwchem::write_nwchem,
-        }),
-        "gaussian94" | "g94" => Some(Writer {
-            display: "Gaussian",
-            extension: ".gbs",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::g94::write_g94,
-        }),
-        "gaussian94lib" | "g94lib" => Some(Writer {
-            display: "Gaussian, system library",
-            extension: ".gbs",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::g94::write_g94lib,
-        }),
-        "psi4" => Some(Writer {
-            display: "Psi4",
-            extension: ".gbs",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::g94::write_psi4,
-        }),
-        "molcas" => Some(Writer {
-            display: "Molcas",
-            extension: ".molcas",
-            comment: "*",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::molcas::write_molcas,
-        }),
-        "qchem" => Some(Writer {
-            display: "Q-Chem",
-            extension: ".qchem",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::qchem::write_qchem,
-        }),
-        "orca" => Some(Writer {
-            display: "ORCA",
-            extension: ".orca",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::orca::write_orca,
-        }),
-        "dalton" => Some(Writer {
-            display: "Dalton",
-            extension: ".dalton",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::dalton::write_dalton,
-        }),
-        "qcschema" => Some(Writer {
-            display: "QCSchema",
-            extension: ".json",
-            comment: "",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::qcschema::write_qcschema,
-        }),
-        "cp2k" => Some(Writer {
-            display: "CP2K",
-            extension: ".cp2k",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::cp2k::write_cp2k,
-        }),
-        "pqs" => Some(Writer {
-            display: "PQS",
-            extension: ".pqs",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::pqs::write_pqs,
-        }),
-        "demon2k" => Some(Writer {
-            display: "deMon2K",
-            extension: ".d2k",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::demon2k::write_demon2k,
-        }),
-        "gamess_us" => Some(Writer {
-            display: "GAMESS US",
-            extension: ".bas",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::gamess_us::write_gamess_us,
-        }),
-        "turbomole" => Some(Writer {
-            display: "Turbomole",
-            extension: ".tm",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::turbomole::write_turbomole,
-        }),
-        "gamess_uk" => Some(Writer {
-            display: "GAMESS UK",
-            extension: ".bas",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::gamess_uk::write_gamess_uk,
-        }),
-        "molpro" => Some(Writer {
-            display: "Molpro",
-            extension: ".mpro",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::molpro::write_molpro,
-        }),
-        "cfour" => Some(Writer {
-            display: "CFOUR",
-            extension: ".c4bas",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::genbas::write_cfour,
-        }),
-        "acesii" => Some(Writer {
-            display: "ACES II",
-            extension: ".acesii",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::genbas::write_aces2,
-        }),
-        "xtron" => Some(Writer {
-            display: "xTron",
-            extension: ".gbs",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::g94::write_xtron,
-        }),
-        "bdf" => Some(Writer {
-            display: "BDF",
-            extension: ".bdf",
-            comment: "*",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::bdf::write_bdf,
-        }),
-        "fhiaims" => Some(Writer {
-            display: "FHI-aims",
-            extension: ".fhiaims",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical"],
-            function: writers::fhiaims::write_fhiaims,
-        }),
-        "jaguar" => Some(Writer {
-            display: "Jaguar",
-            extension: ".jaguar",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::jaguar::write_jaguar,
-        }),
-        "crystal" => Some(Writer {
-            display: "CRYSTAL",
-            extension: ".crystal",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::crystal::write_crystal,
-        }),
-        "veloxchem" => Some(Writer {
-            display: "VeloxChem",
-            extension: ".vlx",
-            comment: "!",
-            valid: vec!["gto", "gto_spherical"],
-            function: writers::veloxchem::write_veloxchem,
-        }),
-        "molcas_library" => Some(Writer {
-            display: "Molcas basis library",
-            extension: ".molcas",
-            comment: "",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::molcas_library::write_molcas_library,
-        }),
-        "libmol" => Some(Writer {
-            display: "Molpro system library",
-            extension: ".libmol",
-            comment: "!",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::libmol::write_libmol,
-        }),
-        "bsedebug" => Some(Writer {
-            display: "BSE Debug",
-            extension: ".debug",
-            comment: "#",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::bsedebug::write_bsedebug,
-        }),
-        "bsejson" | "json" => Some(Writer {
-            display: "BSE JSON",
-            extension: ".json",
-            comment: "",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-            function: writers::bsejson::write_bsejson,
-        }),
-        "ricdwrap" => Some(Writer {
-            display: "acCD auxiliary basis wrapper",
-            extension: ".molcas",
-            comment: "*",
-            valid: vec!["gto", "gto_cartesian", "gto_spherical"],
-            function: writers::ricdwrap::write_ricdwrap,
-        }),
-        _ => None,
-    }
+/// All writer format entries.
+const WRITER_ENTRIES: &[WriterEntry] = &[
+    // nwchem - unique extension .nw
+    WriterEntry {
+        name: "nwchem",
+        display: "NWChem",
+        extension: ".nw",
+        comment: "#",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["nwchem", "nw"],
+        function: writers::nwchem::write_nwchem,
+    },
+    // gaussian94 - aliases: g94; extension .gbs (shared with gaussian94lib, psi4, xtron)
+    WriterEntry {
+        name: "gaussian94",
+        display: "Gaussian",
+        extension: ".gbs",
+        comment: "!",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["gaussian94", "g94"],
+        function: writers::g94::write_g94,
+    },
+    // gaussian94lib - aliases: g94lib
+    WriterEntry {
+        name: "gaussian94lib",
+        display: "Gaussian, system library",
+        extension: ".gbs",
+        comment: "!",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["gaussian94lib", "g94lib"],
+        function: writers::g94::write_g94lib,
+    },
+    // psi4 - extension .gbs (shared)
+    WriterEntry {
+        name: "psi4",
+        display: "Psi4",
+        extension: ".gbs",
+        comment: "!",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["psi4"],
+        function: writers::g94::write_psi4,
+    },
+    // molcas - unique extension .molcas
+    WriterEntry {
+        name: "molcas",
+        display: "Molcas",
+        extension: ".molcas",
+        comment: "*",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["molcas"],
+        function: writers::molcas::write_molcas,
+    },
+    // qchem - unique extension .qchem
+    WriterEntry {
+        name: "qchem",
+        display: "Q-Chem",
+        extension: ".qchem",
+        comment: "!",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["qchem"],
+        function: writers::qchem::write_qchem,
+    },
+    // orca - unique extension .orca
+    WriterEntry {
+        name: "orca",
+        display: "ORCA",
+        extension: ".orca",
+        comment: "!",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["orca"],
+        function: writers::orca::write_orca,
+    },
+    // dalton - unique extension .dalton
+    WriterEntry {
+        name: "dalton",
+        display: "Dalton",
+        extension: ".dalton",
+        comment: "!",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["dalton"],
+        function: writers::dalton::write_dalton,
+    },
+    // qcschema - extension .json (shared with bsejson)
+    WriterEntry {
+        name: "qcschema",
+        display: "QCSchema",
+        extension: ".json",
+        comment: "",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["qcschema"],
+        function: writers::qcschema::write_qcschema,
+    },
+    // cp2k - unique extension .cp2k
+    WriterEntry {
+        name: "cp2k",
+        display: "CP2K",
+        extension: ".cp2k",
+        comment: "#",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["cp2k"],
+        function: writers::cp2k::write_cp2k,
+    },
+    // pqs - unique extension .pqs
+    WriterEntry {
+        name: "pqs",
+        display: "PQS",
+        extension: ".pqs",
+        comment: "!",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["pqs"],
+        function: writers::pqs::write_pqs,
+    },
+    // demon2k - unique extension .d2k
+    WriterEntry {
+        name: "demon2k",
+        display: "deMon2K",
+        extension: ".d2k",
+        comment: "#",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["demon2k", "d2k"],
+        function: writers::demon2k::write_demon2k,
+    },
+    // gamess_us - unique extension .bas (shared with gamess_uk)
+    WriterEntry {
+        name: "gamess_us",
+        display: "GAMESS US",
+        extension: ".bas",
+        comment: "!",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["gamess_us"],
+        function: writers::gamess_us::write_gamess_us,
+    },
+    // turbomole - unique extension .tm
+    WriterEntry {
+        name: "turbomole",
+        display: "Turbomole",
+        extension: ".tm",
+        comment: "#",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["turbomole", "tm"],
+        function: writers::turbomole::write_turbomole,
+    },
+    // gamess_uk - extension .bas (shared with gamess_us)
+    WriterEntry {
+        name: "gamess_uk",
+        display: "GAMESS UK",
+        extension: ".bas",
+        comment: "#",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["gamess_uk"],
+        function: writers::gamess_uk::write_gamess_uk,
+    },
+    // molpro - unique extension .mpro
+    WriterEntry {
+        name: "molpro",
+        display: "Molpro",
+        extension: ".mpro",
+        comment: "!",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["molpro", "mpro"],
+        function: writers::molpro::write_molpro,
+    },
+    // cfour - unique extension .c4bas
+    WriterEntry {
+        name: "cfour",
+        display: "CFOUR",
+        extension: ".c4bas",
+        comment: "!",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["cfour", "c4bas"],
+        function: writers::genbas::write_cfour,
+    },
+    // acesii - unique extension .acesii
+    WriterEntry {
+        name: "acesii",
+        display: "ACES II",
+        extension: ".acesii",
+        comment: "!",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["acesii"],
+        function: writers::genbas::write_aces2,
+    },
+    // xtron - extension .gbs (shared)
+    WriterEntry {
+        name: "xtron",
+        display: "xTron",
+        extension: ".gbs",
+        comment: "!",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["xtron"],
+        function: writers::g94::write_xtron,
+    },
+    // bdf - unique extension .bdf
+    WriterEntry {
+        name: "bdf",
+        display: "BDF",
+        extension: ".bdf",
+        comment: "*",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["bdf"],
+        function: writers::bdf::write_bdf,
+    },
+    // fhiaims - unique extension .fhiaims
+    WriterEntry {
+        name: "fhiaims",
+        display: "FHI-aims",
+        extension: ".fhiaims",
+        comment: "#",
+        valid: &["gto", "gto_cartesian", "gto_spherical"],
+        names: &["fhiaims"],
+        function: writers::fhiaims::write_fhiaims,
+    },
+    // jaguar - unique extension .jaguar
+    WriterEntry {
+        name: "jaguar",
+        display: "Jaguar",
+        extension: ".jaguar",
+        comment: "#",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["jaguar"],
+        function: writers::jaguar::write_jaguar,
+    },
+    // crystal - unique extension .crystal
+    WriterEntry {
+        name: "crystal",
+        display: "CRYSTAL",
+        extension: ".crystal",
+        comment: "!",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["crystal"],
+        function: writers::crystal::write_crystal,
+    },
+    // veloxchem - unique extension .vlx
+    WriterEntry {
+        name: "veloxchem",
+        display: "VeloxChem",
+        extension: ".vlx",
+        comment: "!",
+        valid: &["gto", "gto_spherical"],
+        names: &["veloxchem", "vlx"],
+        function: writers::veloxchem::write_veloxchem,
+    },
+    // molcas_library - extension .molcas (shared with molcas)
+    WriterEntry {
+        name: "molcas_library",
+        display: "Molcas basis library",
+        extension: ".molcas",
+        comment: "",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["molcas_library"],
+        function: writers::molcas_library::write_molcas_library,
+    },
+    // libmol - unique extension .libmol
+    WriterEntry {
+        name: "libmol",
+        display: "Molpro system library",
+        extension: ".libmol",
+        comment: "!",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["libmol"],
+        function: writers::libmol::write_libmol,
+    },
+    // bsedebug - unique extension .debug
+    WriterEntry {
+        name: "bsedebug",
+        display: "BSE Debug",
+        extension: ".debug",
+        comment: "#",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["bsedebug", "debug"],
+        function: writers::bsedebug::write_bsedebug,
+    },
+    // bsejson - aliases: json; extension .json (shared with qcschema)
+    WriterEntry {
+        name: "bsejson",
+        display: "BSE JSON",
+        extension: ".json",
+        comment: "",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["bsejson", "json"],
+        function: writers::bsejson::write_bsejson,
+    },
+    // ricdwrap - extension .molcas (shared with molcas)
+    WriterEntry {
+        name: "ricdwrap",
+        display: "acCD auxiliary basis wrapper",
+        extension: ".molcas",
+        comment: "*",
+        valid: &["gto", "gto_cartesian", "gto_spherical"],
+        names: &["ricdwrap"],
+        function: writers::ricdwrap::write_ricdwrap,
+    },
+];
+
+// Lazy-initialized writer map: name -> entry index.
+// Maps all valid format names (canonical + aliases) to their entry index.
+lazy_static::lazy_static! {
+    static ref WRITER_MAP: HashMap<String, usize> = {
+        let mut map = HashMap::new();
+        for (idx, entry) in WRITER_ENTRIES.iter().enumerate() {
+            for name in entry.names {
+                map.insert(name.to_lowercase(), idx);
+            }
+        }
+        map
+    };
+}
+
+/// Get writer entry by format name (canonical or alias).
+fn get_writer_entry(fmt: &str) -> Option<&WriterEntry> {
+    let fmt_lower = fmt.to_lowercase();
+    WRITER_MAP.get(&fmt_lower).map(|idx| &WRITER_ENTRIES[*idx])
+}
+
+/// Get writer format information for a given format name.
+///
+/// This function handles format aliases (e.g., "g94" -> "gaussian94").
+///
+/// # Arguments
+///
+/// * `fmt` - The format name (case insensitive)
+///
+/// # Returns
+///
+/// `Some(WriterInfo)` if the format is valid, `None` otherwise.
+///
+/// # Example
+///
+/// ```
+/// use bse::prelude::*;
+/// let info = get_writer_info("nwchem").unwrap();
+/// assert_eq!(info.display, "NWChem");
+/// assert_eq!(info.extension, ".nw");
+/// ```
+pub fn get_writer_info(fmt: &str) -> Option<WriterInfo> {
+    get_writer_entry(fmt).map(|e| WriterInfo {
+        name: e.name,
+        display: e.display,
+        extension: e.extension,
+        comment: e.comment,
+        valid: e.valid,
+        aliases: e.names,
+    })
 }
 
 /// Return information about the basis set formats available for writing.
 ///
-/// The returned data is a map of format name to display name. The format
-/// name can be passed as the `fmt` argument to [`write_formatted_basis_str`].
+/// The returned data is a map of canonical format name to display name.
+/// The format name can be passed as the `fmt` argument to
+/// [`write_formatted_basis_str`].
 ///
 /// # Arguments
 ///
@@ -454,23 +444,45 @@ fn writer_map(fmt: &str) -> Option<Writer> {
 /// println!("Available writer formats: {:?}", formats);
 /// ```
 pub fn get_writer_formats(function_types: Option<Vec<String>>) -> HashMap<String, String> {
-    let format_map = writer_format_map();
+    let ftypes: Option<HashSet<String>> = function_types.map(|ft| ft.into_iter().map(|s| s.to_lowercase()).collect());
 
-    if function_types.is_none() {
-        return format_map.into_iter().map(|(k, v)| (k.to_string(), v.display.to_string())).collect();
-    }
+    WRITER_ENTRIES
+        .iter()
+        .filter(|entry| {
+            if let Some(ft) = &ftypes {
+                let valid_types: HashSet<String> = entry.valid.iter().map(|s| s.to_string()).collect();
+                ft.is_subset(&valid_types)
+            } else {
+                true
+            }
+        })
+        .map(|entry| (entry.name.to_string(), entry.display.to_string()))
+        .collect()
+}
 
-    let ftypes: HashSet<String> = function_types.unwrap().into_iter().map(|s| s.to_lowercase()).collect();
-    let mut ret = HashMap::new();
+/// Return detailed information about writer formats including aliases.
+///
+/// The returned data is a map of canonical format name to (display name,
+/// aliases).
+pub fn get_writer_formats_with_aliases(function_types: Option<Vec<String>>) -> HashMap<String, (String, Vec<String>)> {
+    let ftypes: Option<HashSet<String>> = function_types.map(|ft| ft.into_iter().map(|s| s.to_lowercase()).collect());
 
-    for (fmt, v) in format_map {
-        let valid_types: HashSet<String> = v.valid.iter().map(|s| s.to_string()).collect();
-        if ftypes.is_subset(&valid_types) {
-            ret.insert(fmt.to_string(), v.display.to_string());
-        }
-    }
-
-    ret
+    WRITER_ENTRIES
+        .iter()
+        .filter(|entry| {
+            if let Some(ft) = &ftypes {
+                let valid_types: HashSet<String> = entry.valid.iter().map(|s| s.to_string()).collect();
+                ft.is_subset(&valid_types)
+            } else {
+                true
+            }
+        })
+        .map(|entry| {
+            let aliases: Vec<String> =
+                entry.names.iter().filter(|n| **n != entry.name).map(|n| n.to_string()).collect();
+            (entry.name.to_string(), (entry.display.to_string(), aliases))
+        })
+        .collect()
 }
 
 /// Returns the recommended file extension for a given format.
@@ -491,12 +503,9 @@ pub fn get_writer_formats(function_types: Option<Vec<String>>) -> HashMap<String
 /// assert_eq!(ext, ".nw");
 /// ```
 pub fn get_format_extension(fmt: &str) -> Result<&'static str, BseError> {
-    let fmt = fmt.to_lowercase();
-    let format_map = writer_format_map();
-    if !format_map.contains_key(fmt.as_str()) {
-        bse_raise!(ValueError, "Unknown basis set format '{}'", fmt)?;
-    }
-    Ok(format_map[fmt.as_str()].extension)
+    get_writer_entry(fmt)
+        .map(|e| e.extension)
+        .ok_or_else(|| BseError::ValueError(format!("Unknown basis set format '{}'", fmt)))
 }
 
 /// Returns the basis set data as a string representing the data in the
@@ -507,34 +516,35 @@ pub fn write_formatted_basis_str(basis_dict: &BseBasis, fmt: &str, header: Optio
 
 pub fn write_formatted_basis_str_f(basis_dict: &BseBasis, fmt: &str, header: Option<&str>) -> Result<String, BseError> {
     // make writers case insensitive
-    let fmt = fmt.to_lowercase();
-    let writer = writer_map(&fmt).map_or(bse_raise!(ValueError, "Unknown writer format: {fmt}"), Ok)?;
+    let fmt_lower = fmt.to_lowercase();
+    let entry =
+        get_writer_entry(&fmt_lower).ok_or_else(|| BseError::ValueError(format!("Unknown writer format: {}", fmt)))?;
 
     // Determine if the writer supports all the types in the basis_dict
-    if !writer.valid.is_empty() {
+    if !entry.valid.is_empty() {
         let ftypes: HashSet<String> = basis_dict.function_types.iter().cloned().collect();
-        let valid_types: HashSet<String> = writer.valid.iter().map(|s| s.to_string()).collect();
+        let valid_types: HashSet<String> = entry.valid.iter().map(|s| s.to_string()).collect();
         if !ftypes.is_subset(&valid_types) {
-            bse_raise!(
+            return bse_raise!(
                 ValueError,
                 "Writer {} does not support all function types: {:?} vs {:?}",
-                writer.display,
+                entry.display,
                 basis_dict.function_types,
-                writer.valid
-            )?
+                entry.valid
+            );
         }
     }
 
     // Actually do the conversion
-    let mut ret_str = (writer.function)(basis_dict);
+    let mut ret_str = (entry.function)(basis_dict);
 
     if let Some(header) = header {
-        if !writer.comment.is_empty() {
-            let comment_str = writer.comment;
+        if !entry.comment.is_empty() {
+            let comment_str = entry.comment;
             let header_str = header.split('\n').map(|line| format!("{comment_str}{line}")).join("\n");
 
             // HACK - Gaussian94Lib doesn't tolerate blank lines after the header
-            if fmt == "gaussian94lib" {
+            if fmt_lower == "gaussian94lib" {
                 ret_str.insert_str(0, &header_str);
             } else {
                 ret_str.insert_str(0, &format!("{header_str}\n\n"));
@@ -544,7 +554,7 @@ pub fn write_formatted_basis_str_f(basis_dict: &BseBasis, fmt: &str, header: Opt
 
     // HACK - Psi4 requires the first non-comment line be spherical/cartesian, so we
     // have to add that before the header
-    if fmt == "psi4" {
+    if fmt_lower == "psi4" {
         let types = &basis_dict.function_types;
         let harm_type = if types.contains(&"gto_cartesian".to_string()) { "cartesian" } else { "spherical" };
         ret_str.insert_str(0, &format!("{harm_type}\n\n"));

@@ -27,25 +27,53 @@ pub fn handle_list_formats(no_description: bool) -> Result<String, BseError> {
 
 /// Handle the `list-writer-formats` subcommand.
 pub fn handle_list_writer_formats(no_description: bool) -> Result<String, BseError> {
-    let formats = get_writer_formats(None);
+    let formats = get_writer_formats_with_aliases(None);
 
     if no_description {
-        Ok(formats.keys().cloned().collect::<Vec<_>>().join("\n").to_string())
+        let names: Vec<String> = formats
+            .iter()
+            .flat_map(|(name, (_, aliases))| std::iter::once(name.clone()).chain(aliases.clone()))
+            .collect();
+        Ok(names.join("\n"))
     } else {
-        let items: Vec<(String, String)> = formats.into_iter().collect();
-        Ok(format_map_columns(&items, "").join("\n"))
+        // Format: name (aliases) - display
+        let items: Vec<Vec<String>> = formats
+            .iter()
+            .map(|(name, (display, aliases))| {
+                if aliases.is_empty() {
+                    vec![name.clone(), display.clone()]
+                } else {
+                    vec![format!("{} ({})", name, aliases.join(", ")), display.clone()]
+                }
+            })
+            .collect();
+        Ok(format_columns(&items, "").join("\n"))
     }
 }
 
 /// Handle the `list-reader-formats` subcommand.
 pub fn handle_list_reader_formats(no_description: bool) -> Result<String, BseError> {
-    let formats = get_reader_formats();
+    let formats = get_reader_formats_with_aliases();
 
     if no_description {
-        Ok(formats.keys().cloned().collect::<Vec<_>>().join("\n").to_string())
+        let names: Vec<String> = formats
+            .iter()
+            .flat_map(|(name, (_, aliases))| std::iter::once(name.clone()).chain(aliases.clone()))
+            .collect();
+        Ok(names.join("\n"))
     } else {
-        let items: Vec<(String, String)> = formats.into_iter().collect();
-        Ok(format_map_columns(&items, "").join("\n"))
+        // Format: name (aliases) - display
+        let items: Vec<Vec<String>> = formats
+            .iter()
+            .map(|(name, (display, aliases))| {
+                if aliases.is_empty() {
+                    vec![name.clone(), display.clone()]
+                } else {
+                    vec![format!("{} ({})", name, aliases.join(", ")), display.clone()]
+                }
+            })
+            .collect();
+        Ok(format_columns(&items, "").join("\n"))
     }
 }
 
