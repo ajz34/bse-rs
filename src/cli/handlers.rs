@@ -6,7 +6,7 @@
 use std::path::PathBuf;
 
 use crate::prelude::*;
-use crate::{bse_raise, misc::compact_elements, BseError};
+use crate::{bse_raise, misc::compact_elements, BseDataSource, BseError};
 
 use super::check::{detect_dir_format_from_files, detect_format_from_extension};
 use super::common::{format_columns, format_map_columns, format_table, get_cli_only_formats, resolve_cli_format};
@@ -170,6 +170,7 @@ pub fn handle_get_basis(
     get_aux: i32,
     data_dir: Option<String>,
     output_path: Option<PathBuf>,
+    source: BseDataSource,
 ) -> Result<String, BseError> {
     let args = BseGetBasisArgsBuilder::default()
         .elements(elements)
@@ -185,6 +186,7 @@ pub fn handle_get_basis(
         .augment_steep(aug_steep)
         .get_aux(get_aux)
         .data_dir(data_dir)
+        .source(source)
         .build()?;
 
     // Resolve CLI-only format aliases (e.g., "rest" -> "dir-json")
@@ -193,8 +195,7 @@ pub fn handle_get_basis(
     // Check if directory format
     if is_dir_format(&resolved_fmt) {
         // For directory format, output_path is required
-        let dir_path = output_path
-            .ok_or_else(|| BseError::ValueError("Directory format requires output path (-o option)".to_string()))?;
+        let dir_path = output_path.unwrap_or(basis.as_str().into());
 
         let underlying_fmt = strip_dir_prefix(&resolved_fmt);
         let basis_data = get_basis(&basis, args);

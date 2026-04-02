@@ -5,6 +5,7 @@
 use bse::cli::common::resolve_cli_format;
 use bse::cli::handlers::*;
 use bse::is_dir_format;
+use bse::BseDataSource;
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::Shell;
 use std::path::PathBuf;
@@ -18,6 +19,11 @@ struct Cli {
     /// Override which data directory to use
     #[arg(short = 'd', long = "data-dir", global = true, value_name = "PATH")]
     data_dir: Option<PathBuf>,
+
+    /// Data source: 'local' (default), 'remote' (access basissetexchange.org),
+    /// or 'auto' (try local, then remote)
+    #[arg(long = "source", global = true, value_name = "SOURCE")]
+    source: Option<String>,
 
     /// Output to given file rather than stdout
     #[arg(short = 'o', long = "output", global = true, value_name = "PATH")]
@@ -434,10 +440,36 @@ fn handle_completion(shell: Option<Shell>, install: bool) -> Result<String, bse:
 // Main entry point
 // ============================================================================
 
+fn parse_source(source_str: Option<&str>) -> BseDataSource {
+    match source_str {
+        None => BseDataSource::Local,
+        Some(s) => match s.to_lowercase().as_str() {
+            "local" => BseDataSource::Local,
+            "remote" => {
+                #[cfg(feature = "remote")]
+                {
+                    BseDataSource::Remote
+                }
+                #[cfg(not(feature = "remote"))]
+                {
+                    eprintln!("Warning: 'remote' source requires the 'remote' feature. Using 'local' instead.");
+                    BseDataSource::Local
+                }
+            },
+            "auto" => BseDataSource::Auto,
+            _ => {
+                eprintln!("Warning: Invalid source '{}'. Use 'local', 'remote', or 'auto'. Using 'local' instead.", s);
+                BseDataSource::Local
+            },
+        },
+    }
+}
+
 fn main() {
     let cli = Cli::parse();
 
     let data_dir_str = cli.data_dir.as_ref().map(|p| p.to_string_lossy().to_string());
+    let source = parse_source(cli.source.as_deref());
 
     // Check if this is a directory format (needed for output handling)
     // Resolve CLI-only aliases like "rest" -> "dir-json" before checking
@@ -490,6 +522,7 @@ fn main() {
             args.get_aux,
             data_dir_str,
             cli.output.clone(),
+            source,
         ),
 
         // Get references

@@ -195,6 +195,7 @@ pub enum BseDataSource {
     ///
     /// Requires `BSE_DATA_DIR` environment variable or `data_dir` parameter
     /// to be set.
+    #[default]
     Local,
     /// Use remote REST API.
     ///
@@ -205,7 +206,6 @@ pub enum BseDataSource {
     ///
     /// This is the default. Without the `remote` feature, this is
     /// equivalent to `Local`.
-    #[default]
     Auto,
 }
 
