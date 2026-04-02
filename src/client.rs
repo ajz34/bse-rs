@@ -3,16 +3,36 @@
 //! This module provides functionality to fetch basis set data from the
 //! Basis Set Exchange REST API at `https://www.basissetexchange.org`.
 //!
-//! The API URL can be overridden via the `BSE_API_URL` environment variable.
+//! ## Environment Variables
+//!
+//! - `BSE_API_URL`: Override the API URL (default: `https://www.basissetexchange.org`)
+//! - `BSE_TIMEOUT`: Request timeout in seconds (default: 10)
 
 use crate::prelude::*;
 
 /// Default URL for the BSE REST API.
 pub static DEFAULT_API_URL: &str = "https://www.basissetexchange.org";
 
+/// Default timeout in seconds for API requests.
+pub static DEFAULT_TIMEOUT_SECS: u64 = 10;
+
 /// Get the API URL from environment variable or use default.
 pub fn get_api_url() -> String {
     std::env::var("BSE_API_URL").unwrap_or_else(|_| DEFAULT_API_URL.to_string())
+}
+
+/// Get the timeout in seconds from environment variable or use default.
+///
+/// Reads from `BSE_TIMEOUT` environment variable. Default is 10 seconds.
+pub fn get_timeout_secs() -> u64 {
+    std::env::var("BSE_TIMEOUT").ok().and_then(|s| s.parse().ok()).unwrap_or(DEFAULT_TIMEOUT_SECS)
+}
+
+/// Create a ureq Agent with configured timeout.
+fn create_agent() -> ureq::Agent {
+    let timeout = std::time::Duration::from_secs(get_timeout_secs());
+    let config = ureq::config::Config::builder().timeout_global(Some(timeout)).build();
+    ureq::Agent::new_with_config(config)
 }
 
 /// Fetch metadata for all basis sets from the remote API.
@@ -22,7 +42,8 @@ pub fn get_metadata_remote(api_url: Option<&str>) -> Result<HashMap<String, BseR
     let base_url = api_url.map(|s| s.to_string()).unwrap_or_else(get_api_url);
     let url = format!("{}/api/metadata", base_url);
 
-    let response = ureq::get(&url)
+    let response = create_agent()
+        .get(&url)
         .header("User-Agent", "bse-rs (Basis Set Exchange in Rust)")
         .header("From", "bse-rs@example.com")
         .call()
@@ -60,7 +81,8 @@ pub fn get_basis_remote(name: &str, args: &BseGetBasisArgs) -> Result<BseBasis, 
     let base_url = args.api_url.clone().unwrap_or_else(get_api_url);
     let url = build_basis_url(&base_url, name, "json", args);
 
-    let response = ureq::get(&url)
+    let response = create_agent()
+        .get(&url)
         .header("User-Agent", "bse-rs (Basis Set Exchange in Rust)")
         .header("From", "bse-rs@example.com")
         .call()
@@ -94,7 +116,8 @@ pub fn get_formatted_basis_remote(name: &str, fmt: &str, args: &BseGetBasisArgs)
     let base_url = args.api_url.clone().unwrap_or_else(get_api_url);
     let url = build_basis_url(&base_url, name, fmt, args);
 
-    let response = ureq::get(&url)
+    let response = create_agent()
+        .get(&url)
         .header("User-Agent", "bse-rs (Basis Set Exchange in Rust)")
         .header("From", "bse-rs@example.com")
         .call()
@@ -201,7 +224,8 @@ pub fn get_formats_remote(api_url: Option<&str>) -> Result<HashMap<String, Strin
     let base_url = api_url.map(|s| s.to_string()).unwrap_or_else(get_api_url);
     let url = format!("{}/api/formats", base_url);
 
-    let response = ureq::get(&url)
+    let response = create_agent()
+        .get(&url)
         .header("User-Agent", "bse-rs (Basis Set Exchange in Rust)")
         .header("From", "bse-rs@example.com")
         .call()
@@ -231,7 +255,8 @@ pub fn get_reference_formats_remote(api_url: Option<&str>) -> Result<HashMap<Str
     let base_url = api_url.map(|s| s.to_string()).unwrap_or_else(get_api_url);
     let url = format!("{}/api/reference_formats", base_url);
 
-    let response = ureq::get(&url)
+    let response = create_agent()
+        .get(&url)
         .header("User-Agent", "bse-rs (Basis Set Exchange in Rust)")
         .header("From", "bse-rs@example.com")
         .call()
@@ -261,7 +286,8 @@ pub fn get_basis_notes_remote(name: &str, api_url: Option<&str>) -> Result<Strin
     let base_url = api_url.map(|s| s.to_string()).unwrap_or_else(get_api_url);
     let url = format!("{}/api/notes/{}", base_url, name);
 
-    let response = ureq::get(&url)
+    let response = create_agent()
+        .get(&url)
         .header("User-Agent", "bse-rs (Basis Set Exchange in Rust)")
         .header("From", "bse-rs@example.com")
         .call()
@@ -292,7 +318,8 @@ pub fn get_family_notes_remote(family: &str, api_url: Option<&str>) -> Result<St
     let base_url = api_url.map(|s| s.to_string()).unwrap_or_else(get_api_url);
     let url = format!("{}/api/family_notes/{}", base_url, family);
 
-    let response = ureq::get(&url)
+    let response = create_agent()
+        .get(&url)
         .header("User-Agent", "bse-rs (Basis Set Exchange in Rust)")
         .header("From", "bse-rs@example.com")
         .call()

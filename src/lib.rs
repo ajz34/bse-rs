@@ -39,7 +39,9 @@
 //! println!("{}", output);
 //! ```
 //!
-//! ## Data Directory Setup
+//! ## Environment Variables
+//!
+//! ### BSE_DATA_DIR
 //!
 //! This crate requires basis set data from the Python BSE project. Set the
 //! `BSE_DATA_DIR` environment variable:
@@ -50,6 +52,38 @@
 //!
 //! Alternatively, call [`specify_bse_data_dir`][api::specify_bse_data_dir]
 //! at runtime, or the library will attempt auto-detection.
+//!
+//! ### BSE_REMOTE
+//!
+//! The `BSE_REMOTE` environment variable controls the default data source:
+//!
+//! - `local` (or `0`, `false`, `no`): Use local data directory only
+//! - `remote` (or `1`, `true`, `yes`): Use remote REST API only (requires
+//!   `remote` feature)
+//! - `auto`: Try local first, fallback to remote if local fails (default)
+//!
+//! Example:
+//! ```bash
+//! export BSE_REMOTE=local  # Use local only
+//! ```
+//!
+//! ### BSE_TIMEOUT
+//!
+//! Timeout in seconds for remote API requests (default: 10). Only applies when
+//! using `remote` or `auto` source with the `remote` feature enabled.
+//!
+//! ```bash
+//! export BSE_TIMEOUT=30  # 30 second timeout
+//! ```
+//!
+//! ### BSE_WARN_LOCAL_NOTFOUND
+//!
+//! Control warning when falling back from local to remote in `auto` mode
+//! (default: true).
+//!
+//! ```bash
+//! export BSE_WARN_LOCAL_NOTFOUND=0  # Suppress warning
+//! ```
 //!
 //! ## References
 //!

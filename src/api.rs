@@ -112,6 +112,87 @@ pub fn get_bse_data_dir() -> Option<String> {
 
 /* #endregion */
 
+/* #region data source */
+
+/// Get the default data source from the `BSE_REMOTE` environment variable.
+///
+/// The `BSE_REMOTE` environment variable controls the default data source
+/// behavior when no explicit `--source` option or `source` parameter is
+/// provided.
+///
+/// # Supported Values
+///
+/// - `local` or `0` or `false` or `no`: Use local data directory
+/// - `remote` or `1` or `true` or `yes`: Use remote REST API (requires `remote`
+///   feature)
+/// - `auto`: Try local first, fallback to remote if local fails (default if
+///   unset)
+///
+/// # Returns
+///
+/// The default [`BseDataSource`] based on the environment variable.
+/// Returns [`BseDataSource::Auto`] if the variable is not set or has an
+/// invalid value.
+pub fn get_bse_source_default() -> BseDataSource {
+    let source_str = std::env::var("BSE_REMOTE").unwrap_or_default();
+    parse_source_from_str(&source_str)
+}
+
+/// Parse a string into a [`BseDataSource`].
+///
+/// Used for both `BSE_REMOTE` environment variable parsing and CLI
+/// `--source` option parsing.
+///
+/// # Supported Values
+///
+/// - Empty string: Returns `Auto` (default)
+/// - `local`, `0`, `false`, `no`: Returns `Local`
+/// - `remote`, `1`, `true`, `yes`: Returns `Remote` (requires `remote` feature)
+/// - `auto`: Returns `Auto`
+///
+/// Invalid values emit a warning and return `Auto`.
+pub fn parse_source_from_str(source_str: &str) -> BseDataSource {
+    match source_str.to_lowercase().as_str() {
+        "" => BseDataSource::Auto,
+        "local" | "0" | "false" | "no" => BseDataSource::Local,
+        "remote" | "1" | "true" | "yes" => {
+            #[cfg(feature = "remote")]
+            {
+                BseDataSource::Remote
+            }
+            #[cfg(not(feature = "remote"))]
+            {
+                eprintln!("Warning: 'remote' source requires the 'remote' feature. Using 'auto' instead.");
+                BseDataSource::Auto
+            }
+        },
+        "auto" => BseDataSource::Auto,
+        s => {
+            eprintln!("Warning: Invalid source '{}'. Use 'local', 'remote', or 'auto'. Using 'auto' instead.", s);
+            BseDataSource::Auto
+        },
+    }
+}
+
+/// Check if local-not-found warning is enabled.
+///
+/// Controlled by `BSE_WARN_LOCAL_NOTFOUND` environment variable.
+/// Default is `true` (warning enabled).
+///
+/// # Supported Values
+///
+/// - `0`, `false`, `no`: Disable warning
+/// - Any other value or unset: Enable warning (default)
+pub fn is_warn_local_notfound() -> bool {
+    let val = std::env::var("BSE_WARN_LOCAL_NOTFOUND").unwrap_or_default();
+    match val.to_lowercase().as_str() {
+        "0" | "false" | "no" => false,
+        _ => true,
+    }
+}
+
+/* #endregion */
+
 /* #region read metadata */
 
 /// Obtain the metadata for all basis sets.
@@ -195,7 +276,6 @@ pub enum BseDataSource {
     ///
     /// Requires `BSE_DATA_DIR` environment variable or `data_dir` parameter
     /// to be set.
-    #[default]
     Local,
     /// Use remote REST API.
     ///
@@ -206,6 +286,7 @@ pub enum BseDataSource {
     ///
     /// This is the default. Without the `remote` feature, this is
     /// equivalent to `Local`.
+    #[default]
     Auto,
 }
 
@@ -722,7 +803,14 @@ pub fn get_basis_f(name: &str, args: BseGetBasisArgs) -> Result<BseBasis, BseErr
         #[cfg(feature = "remote")]
         BseDataSource::Auto => {
             // Try local first (which includes Truhlar calendar handling)
-            get_basis_local_f(name, &args).or_else(|_| {
+            get_basis_local_f(name, &args).or_else(|_local_err| {
+                // Warn user if enabled
+                if is_warn_local_notfound() {
+                    eprintln!(
+                        "Warning: Local data directory not found or basis set not available locally. \
+                         Falling back to remote API. Set BSE_WARN_LOCAL_NOTFOUND=0 to suppress this warning."
+                    );
+                }
                 // Try remote directly
                 let result = client::get_basis_remote(name, &args);
                 match result {

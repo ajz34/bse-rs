@@ -5,7 +5,7 @@
 use bse::cli::common::resolve_cli_format;
 use bse::cli::handlers::*;
 use bse::is_dir_format;
-use bse::BseDataSource;
+use bse::{get_bse_source_default, parse_source_from_str, BseDataSource};
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::Shell;
 use std::path::PathBuf;
@@ -20,8 +20,8 @@ struct Cli {
     #[arg(short = 'd', long = "data-dir", global = true, value_name = "PATH")]
     data_dir: Option<PathBuf>,
 
-    /// Data source: 'local' (default), 'remote' (access basissetexchange.org),
-    /// or 'auto' (try local, then remote)
+    /// Data source: 'local', 'remote' (requires remote feature), or 'auto'.
+    /// Default is from BSE_REMOTE env var, or 'local' if unset.
     #[arg(long = "source", global = true, value_name = "SOURCE")]
     source: Option<String>,
 
@@ -442,26 +442,10 @@ fn handle_completion(shell: Option<Shell>, install: bool) -> Result<String, bse:
 
 fn parse_source(source_str: Option<&str>) -> BseDataSource {
     match source_str {
-        None => BseDataSource::Local,
-        Some(s) => match s.to_lowercase().as_str() {
-            "local" => BseDataSource::Local,
-            "remote" => {
-                #[cfg(feature = "remote")]
-                {
-                    BseDataSource::Remote
-                }
-                #[cfg(not(feature = "remote"))]
-                {
-                    eprintln!("Warning: 'remote' source requires the 'remote' feature. Using 'local' instead.");
-                    BseDataSource::Local
-                }
-            },
-            "auto" => BseDataSource::Auto,
-            _ => {
-                eprintln!("Warning: Invalid source '{}'. Use 'local', 'remote', or 'auto'. Using 'local' instead.", s);
-                BseDataSource::Local
-            },
-        },
+        // If --source is explicitly provided, parse it
+        Some(s) => parse_source_from_str(s),
+        // If --source is not provided, use BSE_REMOTE env var default
+        None => get_bse_source_default(),
     }
 }
 
