@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use crate::prelude::*;
 use crate::{bse_raise, misc::compact_elements, BseError};
 
-use super::check::detect_format_from_extension;
+use super::check::{detect_dir_format_from_files, detect_format_from_extension};
 use super::common::{format_columns, format_map_columns, format_table, get_cli_only_formats, resolve_cli_format};
 
 /// Handle the `list-writer-formats` subcommand.
@@ -345,39 +345,83 @@ pub fn handle_convert_basis(
     out_fmt: Option<String>,
     make_gen: bool,
 ) -> Result<String, BseError> {
-    // Check if paths are directories
+    // Check if paths exist and are directories
     let input_is_dir = input_file.is_dir();
+    let output_exists = output_file.exists();
     let output_is_dir = output_file.is_dir();
 
-    // Detect formats from file extensions if not specified
+    // Detect input format
     let resolved_in_fmt = in_fmt.map(|f| resolve_cli_format(&f)).or_else(|| {
         if input_is_dir {
-            Some("dir-json".to_string())
+            detect_dir_format_from_files(&input_file, true)
         } else {
             detect_format_from_extension(&input_file.to_string_lossy(), true)
-        }
-    });
-    let resolved_out_fmt = out_fmt.map(|f| resolve_cli_format(&f)).or_else(|| {
-        if output_is_dir {
-            Some("dir-json".to_string())
-        } else {
-            detect_format_from_extension(&output_file.to_string_lossy(), false)
         }
     });
 
     if resolved_in_fmt.is_none() {
         return bse_raise!(
             ValueError,
-            "Could not detect input format from filename '{}'. Specify format with --in-fmt",
+            "Could not detect input format from '{}'. Specify format with --in-fmt",
             input_file.display()
         );
     }
+
+    // Detect output format with strict validation
+    // User-specified format takes precedence
+    let resolved_out_fmt = if let Some(fmt) = &out_fmt {
+        let resolved = resolve_cli_format(fmt);
+        let is_dir_fmt = is_dir_format(&resolved);
+
+        // Validate: dir format can't be written to existing file
+        if output_exists && !output_is_dir && is_dir_fmt {
+            return bse_raise!(
+                ValueError,
+                "Cannot write directory format '{}' to a file path '{}'. Use a directory path instead.",
+                fmt,
+                output_file.display()
+            );
+        }
+
+        // Validate: non-dir format can't be written to existing directory
+        if output_exists && output_is_dir && !is_dir_fmt {
+            return bse_raise!(
+                ValueError,
+                "Cannot write single-file format '{}' to a directory '{}'. Use a file path instead.",
+                fmt,
+                output_file.display()
+            );
+        }
+
+        Some(resolved)
+    } else {
+        // No --out-fmt specified - try auto-detection
+        if output_is_dir {
+            // Existing directory: try to detect from files inside
+            detect_dir_format_from_files(&output_file, false)
+        } else if output_exists {
+            // Existing file: detect from extension
+            detect_format_from_extension(&output_file.to_string_lossy(), false)
+        } else {
+            // Output doesn't exist: detect from extension in filename
+            detect_format_from_extension(&output_file.to_string_lossy(), false)
+        }
+    };
+
     if resolved_out_fmt.is_none() {
-        return bse_raise!(
-            ValueError,
-            "Could not detect output format from filename '{}'. Specify format with --out-fmt",
-            output_file.display()
-        );
+        if output_is_dir {
+            return bse_raise!(
+                ValueError,
+                "Could not detect output format from directory '{}'. Specify format with --out-fmt",
+                output_file.display()
+            );
+        } else {
+            return bse_raise!(
+                ValueError,
+                "Could not detect output format from filename '{}'. Specify format with --out-fmt",
+                output_file.display()
+            );
+        }
     }
 
     let in_fmt_resolved = resolved_in_fmt.unwrap();
