@@ -111,9 +111,7 @@ mod test {
     #[case("bsedebug"      , "def2-ECP"  , ["elements = '49-51'"     ].join("\n"))]
     #[case("bsedebug"      , "def2-TZVPD", ["elements = '1-3, 49-51'"].join("\n"))]
     #[case("ricdwrap"      , "cc-pVTZ"   , ["elements = '1-3'"       ].join("\n"))]
-    #[should_panic(expected = "does not support all function types")]
     #[case("ricdwrap"      , "def2-ECP"  , ["elements = '49-51'"     ].join("\n"))]
-    #[should_panic(expected = "does not support all function types")]
     #[case("ricdwrap"      , "def2-TZVPD", ["elements = '1-3, 49-51'"].join("\n"))]
     fn test_get_formatted_basis(#[case] fmt: &str, #[case] basis: &str, #[case] args: String) {
         let manifest_dir = env!("CARGO_MANIFEST_DIR");

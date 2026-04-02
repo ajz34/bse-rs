@@ -119,7 +119,7 @@ const WRITER_ENTRIES: &[WriterEntry] = &[
         names: &["psi4"],
         function: writers::g94::write_psi4,
     },
-    // molcas - unique extension .molcas
+    // molcas - extension .molcas
     WriterEntry {
         name: "molcas",
         display: "Molcas",
@@ -128,6 +128,16 @@ const WRITER_ENTRIES: &[WriterEntry] = &[
         valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
         names: &["molcas"],
         function: writers::molcas::write_molcas,
+    },
+    // molcas_library - extension .molcas (shared)
+    WriterEntry {
+        name: "molcas_library",
+        display: "Molcas basis library",
+        extension: ".molcas",
+        comment: "*",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["molcas_library"],
+        function: writers::molcas_library::write_molcas_library,
     },
     // qchem - unique extension .qchem
     WriterEntry {
@@ -159,7 +169,7 @@ const WRITER_ENTRIES: &[WriterEntry] = &[
         names: &["dalton"],
         function: writers::dalton::write_dalton,
     },
-    // qcschema - extension .json (shared with bsejson)
+    // qcschema - extension .json (shared with json)
     WriterEntry {
         name: "qcschema",
         display: "QCSchema",
@@ -189,7 +199,7 @@ const WRITER_ENTRIES: &[WriterEntry] = &[
         names: &["pqs"],
         function: writers::pqs::write_pqs,
     },
-    // demon2k - unique extension .d2k
+    // demon2k - extension .d2k
     WriterEntry {
         name: "demon2k",
         display: "deMon2K",
@@ -199,7 +209,7 @@ const WRITER_ENTRIES: &[WriterEntry] = &[
         names: &["demon2k", "d2k"],
         function: writers::demon2k::write_demon2k,
     },
-    // gamess_us - unique extension .bas (shared with gamess_uk)
+    // gamess_us - extension .bas (shared with gamess_uk)
     WriterEntry {
         name: "gamess_us",
         display: "GAMESS US",
@@ -239,6 +249,16 @@ const WRITER_ENTRIES: &[WriterEntry] = &[
         names: &["molpro", "mpro"],
         function: writers::molpro::write_molpro,
     },
+    // libmol - unique extension .libmol
+    WriterEntry {
+        name: "libmol",
+        display: "Molpro system library",
+        extension: ".libmol",
+        comment: "!",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["libmol"],
+        function: writers::libmol::write_libmol,
+    },
     // cfour - unique extension .c4bas
     WriterEntry {
         name: "cfour",
@@ -269,6 +289,26 @@ const WRITER_ENTRIES: &[WriterEntry] = &[
         names: &["xtron"],
         function: writers::g94::write_xtron,
     },
+    // bsedebug - unique extension .bse
+    WriterEntry {
+        name: "bsedebug",
+        display: "BSE Debug",
+        extension: ".bse",
+        comment: "!",
+        valid: &[],
+        names: &["bsedebug"],
+        function: writers::bsedebug::write_bsedebug,
+    },
+    // json - extension .json (shared with qcschema)
+    WriterEntry {
+        name: "json",
+        display: "JSON",
+        extension: ".json",
+        comment: "",
+        valid: &[],
+        names: &["json", "bsejson"],
+        function: writers::bsejson::write_bsejson,
+    },
     // bdf - unique extension .bdf
     WriterEntry {
         name: "bdf",
@@ -278,6 +318,16 @@ const WRITER_ENTRIES: &[WriterEntry] = &[
         valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
         names: &["bdf"],
         function: writers::bdf::write_bdf,
+    },
+    // ricdwrap - unique extension .ricdwrap
+    WriterEntry {
+        name: "ricdwrap",
+        display: "Wrapper for generating acCD auxiliary basis sets with OpenMolcas",
+        extension: ".ricdwrap",
+        comment: "*",
+        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
+        names: &["ricdwrap"],
+        function: writers::ricdwrap::write_ricdwrap,
     },
     // fhiaims - unique extension .fhiaims
     WriterEntry {
@@ -302,9 +352,9 @@ const WRITER_ENTRIES: &[WriterEntry] = &[
     // crystal - unique extension .crystal
     WriterEntry {
         name: "crystal",
-        display: "CRYSTAL",
+        display: "Crystal",
         extension: ".crystal",
-        comment: "!",
+        comment: "*",
         valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
         names: &["crystal"],
         function: writers::crystal::write_crystal,
@@ -318,56 +368,6 @@ const WRITER_ENTRIES: &[WriterEntry] = &[
         valid: &["gto", "gto_spherical"],
         names: &["veloxchem", "vlx"],
         function: writers::veloxchem::write_veloxchem,
-    },
-    // molcas_library - extension .molcas (shared with molcas)
-    WriterEntry {
-        name: "molcas_library",
-        display: "Molcas basis library",
-        extension: ".molcas",
-        comment: "",
-        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        names: &["molcas_library"],
-        function: writers::molcas_library::write_molcas_library,
-    },
-    // libmol - unique extension .libmol
-    WriterEntry {
-        name: "libmol",
-        display: "Molpro system library",
-        extension: ".libmol",
-        comment: "!",
-        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        names: &["libmol"],
-        function: writers::libmol::write_libmol,
-    },
-    // bsedebug - unique extension .debug
-    WriterEntry {
-        name: "bsedebug",
-        display: "BSE Debug",
-        extension: ".debug",
-        comment: "#",
-        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        names: &["bsedebug", "debug"],
-        function: writers::bsedebug::write_bsedebug,
-    },
-    // bsejson - aliases: json; extension .json (shared with qcschema)
-    WriterEntry {
-        name: "bsejson",
-        display: "BSE JSON",
-        extension: ".json",
-        comment: "",
-        valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        names: &["bsejson", "json"],
-        function: writers::bsejson::write_bsejson,
-    },
-    // ricdwrap - extension .molcas (shared with molcas)
-    WriterEntry {
-        name: "ricdwrap",
-        display: "acCD auxiliary basis wrapper",
-        extension: ".molcas",
-        comment: "*",
-        valid: &["gto", "gto_cartesian", "gto_spherical"],
-        names: &["ricdwrap"],
-        function: writers::ricdwrap::write_ricdwrap,
     },
 ];
 

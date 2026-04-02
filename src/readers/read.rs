@@ -57,7 +57,7 @@ const READER_ENTRIES: &[ReaderEntry] = &[
         name: "gaussian94",
         display: "Gaussian94",
         extension: ".gbs",
-        names: &["gaussian94", "g94", "gbs"],
+        names: &["gaussian94", "gaussian", "g94", "gbs"],
         function: readers::g94::read_g94,
     },
     // turbomole - unique extension .tm
@@ -68,7 +68,7 @@ const READER_ENTRIES: &[ReaderEntry] = &[
         names: &["turbomole", "tm"],
         function: readers::turbomole::read_turbomole,
     },
-    // dalton - unique extension .mol
+    // dalton - extension .mol (unique for reader)
     ReaderEntry {
         name: "dalton",
         display: "Dalton",
@@ -76,12 +76,20 @@ const READER_ENTRIES: &[ReaderEntry] = &[
         names: &["dalton", "mol"],
         function: readers::dalton::read_dalton,
     },
-    // molcas - unique extension .molcas
+    // molcas - extension .molcas
     ReaderEntry {
         name: "molcas",
         display: "Molcas",
         extension: ".molcas",
         names: &["molcas"],
+        function: readers::molcas::read_molcas,
+    },
+    // molcas_library - alias for molcas reader
+    ReaderEntry {
+        name: "molcas_library",
+        display: "Molcas basis library",
+        extension: ".molcas",
+        names: &["molcas_library"],
         function: readers::molcas::read_molcas,
     },
     // molpro - unique extension .mpro
@@ -92,20 +100,60 @@ const READER_ENTRIES: &[ReaderEntry] = &[
         names: &["molpro", "mpro"],
         function: readers::molpro::read_molpro,
     },
-    // genbas - aliases: cfour, aces2; extension .genbas
+    // libmol - unique extension .libmol
+    ReaderEntry {
+        name: "libmol",
+        display: "Molpro system library",
+        extension: ".libmol",
+        names: &["libmol"],
+        function: readers::libmol::read_libmol,
+    },
+    // cfour - extension .c4bas
+    ReaderEntry {
+        name: "cfour",
+        display: "CFOUR",
+        extension: ".c4bas",
+        names: &["cfour"],
+        function: readers::genbas::read_genbas,
+    },
+    // genbas - extension .genbas
     ReaderEntry {
         name: "genbas",
         display: "Genbas",
         extension: ".genbas",
-        names: &["genbas", "cfour", "aces2", "genbas"],
+        names: &["genbas"],
         function: readers::genbas::read_genbas,
     },
-    // gamess_us - unique extension .gms
+    // gbasis - extension .gbasis
+    ReaderEntry {
+        name: "gbasis",
+        display: "GBasis",
+        extension: ".gbasis",
+        names: &["gbasis"],
+        function: readers::gbasis::read_gbasis,
+    },
+    // demon2k - extension .d2k
+    ReaderEntry {
+        name: "demon2k",
+        display: "deMon2k",
+        extension: ".d2k",
+        names: &["demon2k", "d2k"],
+        function: readers::demon2k::read_demon2k,
+    },
+    // ricdlib - extension .RICDlib (use lowercase for detection)
+    ReaderEntry {
+        name: "ricdlib",
+        display: "MolCAS RICDlib",
+        extension: ".ricdlib",
+        names: &["ricdlib", "ricd"],
+        function: readers::ricdlib::read_ricdlib,
+    },
+    // gamess_us - extension .bas
     ReaderEntry {
         name: "gamess_us",
         display: "GAMESS US",
-        extension: ".gms",
-        names: &["gamess_us", "gms"],
+        extension: ".bas",
+        names: &["gamess_us"],
         function: readers::gamess_us::read_gamess_us,
     },
     // cp2k - unique extension .cp2k
@@ -124,30 +172,6 @@ const READER_ENTRIES: &[ReaderEntry] = &[
         names: &["crystal"],
         function: readers::crystal::read_crystal,
     },
-    // libmol - unique extension .libmol
-    ReaderEntry {
-        name: "libmol",
-        display: "Libmol",
-        extension: ".libmol",
-        names: &["libmol"],
-        function: readers::libmol::read_libmol,
-    },
-    // gbasis - unique extension .gbas
-    ReaderEntry {
-        name: "gbasis",
-        display: "GBasis",
-        extension: ".gbas",
-        names: &["gbasis", "gbas"],
-        function: readers::gbasis::read_gbasis,
-    },
-    // demon2k - unique extension .dmon
-    ReaderEntry {
-        name: "demon2k",
-        display: "deMon2k",
-        extension: ".dmon",
-        names: &["demon2k", "dmon"],
-        function: readers::demon2k::read_demon2k,
-    },
     // veloxchem - unique extension .vlx
     ReaderEntry {
         name: "veloxchem",
@@ -156,15 +180,7 @@ const READER_ENTRIES: &[ReaderEntry] = &[
         names: &["veloxchem", "vlx"],
         function: readers::veloxchem::read_veloxchem,
     },
-    // ricdlib - unique extension .ricd
-    ReaderEntry {
-        name: "ricdlib",
-        display: "RICDlib",
-        extension: ".ricd",
-        names: &["ricdlib", "ricd"],
-        function: readers::ricdlib::read_ricdlib,
-    },
-    // json - aliases: bsejson
+    // json - extension .json
     ReaderEntry {
         name: "json",
         display: "JSON",

@@ -179,10 +179,11 @@ fn parse_electron_lines(
 }
 
 pub fn read_crystal(basis_str: &str) -> Result<BseBasisMinimal, BseError> {
-    // Crystal format uses '!' for comments in header, but actual basis data has no
-    // comments Remove comment lines and blank lines from header
+    // Crystal format uses '!' (probably '*') for comments in header, but actual
+    // basis data has no comments Remove comment lines and blank lines from
+    // header
     let basis_lines =
-        helpers::prune_lines(&basis_str.lines().map(|s| s.trim().to_string()).collect_vec(), "!#", true, true);
+        helpers::prune_lines(&basis_str.lines().map(|s| s.trim().to_string()).collect_vec(), "*!#", true, true);
 
     let mut basis_dict = BseBasisMinimal {
         molssi_bse_schema: BseMolssiBseSchema { schema_type: "minimal".to_string(), schema_version: "0.1".to_string() },
