@@ -25,11 +25,11 @@ pub fn resolve_cli_format(fmt: &str) -> String {
 /// Get CLI-only format entries for listing.
 ///
 /// Returns entries that should be added to format lists,
-/// in the format (name, aliases, display).
-pub fn get_cli_only_formats() -> Vec<(String, String, String)> {
+/// in the format (name, extension, aliases, display).
+pub fn get_cli_only_formats() -> Vec<(String, String, String, String)> {
     CLI_FORMAT_ALIASES
         .iter()
-        .map(|(name, _canonical, display)| (name.to_string(), String::new(), display.to_string()))
+        .map(|(name, _canonical, display)| (name.to_string(), ".json".to_string(), String::new(), display.to_string()))
         .collect()
 }
 

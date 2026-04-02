@@ -18,23 +18,25 @@ pub fn handle_list_writer_formats(no_description: bool) -> Result<String, BseErr
     if no_description {
         let names: Vec<String> = formats
             .iter()
-            .flat_map(|(name, (_, aliases))| std::iter::once(name.clone()).chain(aliases.clone()))
-            .chain(get_cli_only_formats().iter().map(|(name, _, _)| name.clone()))
+            .flat_map(|(name, (_, _, aliases))| std::iter::once(name.clone()).chain(aliases.clone()))
+            .chain(get_cli_only_formats().iter().map(|(name, _, _, _)| name.clone()))
             .collect();
         // Sort alphabetically
         let mut sorted_names = names;
         sorted_names.sort();
         Ok(sorted_names.join("\n"))
     } else {
-        // Format as table: name | aliases | display
-        let headers = ["Name", "Aliases", "Display"];
+        // Format as table: name | extension | aliases | display
+        let headers = ["Name", "Extension", "Aliases", "Display"];
         let mut rows: Vec<Vec<String>> = formats
             .iter()
-            .map(|(name, (display, aliases))| vec![name.clone(), aliases.join(", "), display.clone()])
+            .map(|(name, (display, extension, aliases))| {
+                vec![name.clone(), extension.clone(), aliases.join(", "), display.clone()]
+            })
             .collect();
         // Add CLI-only formats
-        for (name, aliases, display) in get_cli_only_formats() {
-            rows.push(vec![name, aliases, display]);
+        for (name, extension, aliases, display) in get_cli_only_formats() {
+            rows.push(vec![name, extension, aliases, display]);
         }
         // Sort alphabetically by name
         rows.sort_by(|a, b| a[0].cmp(&b[0]));
@@ -49,23 +51,25 @@ pub fn handle_list_reader_formats(no_description: bool) -> Result<String, BseErr
     if no_description {
         let names: Vec<String> = formats
             .iter()
-            .flat_map(|(name, (_, aliases))| std::iter::once(name.clone()).chain(aliases.clone()))
-            .chain(get_cli_only_formats().iter().map(|(name, _, _)| name.clone()))
+            .flat_map(|(name, (_, _, aliases))| std::iter::once(name.clone()).chain(aliases.clone()))
+            .chain(get_cli_only_formats().iter().map(|(name, _, _, _)| name.clone()))
             .collect();
         // Sort alphabetically
         let mut sorted_names = names;
         sorted_names.sort();
         Ok(sorted_names.join("\n"))
     } else {
-        // Format as table: name | aliases | display
-        let headers = ["Name", "Aliases", "Display"];
+        // Format as table: name | extension | aliases | display
+        let headers = ["Name", "Extension", "Aliases", "Display"];
         let mut rows: Vec<Vec<String>> = formats
             .iter()
-            .map(|(name, (display, aliases))| vec![name.clone(), aliases.join(", "), display.clone()])
+            .map(|(name, (display, extension, aliases))| {
+                vec![name.clone(), extension.clone(), aliases.join(", "), display.clone()]
+            })
             .collect();
         // Add CLI-only formats
-        for (name, aliases, display) in get_cli_only_formats() {
-            rows.push(vec![name, aliases, display]);
+        for (name, extension, aliases, display) in get_cli_only_formats() {
+            rows.push(vec![name, extension, aliases, display]);
         }
         // Sort alphabetically by name
         rows.sort_by(|a, b| a[0].cmp(&b[0]));

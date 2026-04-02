@@ -96,7 +96,7 @@ const WRITER_ENTRIES: &[WriterEntry] = &[
         extension: ".gbs",
         comment: "!",
         valid: &["gto", "gto_cartesian", "gto_spherical", "scalar_ecp"],
-        names: &["gaussian94", "g94"],
+        names: &["gaussian94", "g94", "gaussian", "gau"],
         function: writers::g94::write_g94,
     },
     // gaussian94lib - aliases: g94lib
@@ -499,11 +499,14 @@ pub fn get_writer_formats(function_types: Option<Vec<String>>) -> HashMap<String
         .collect()
 }
 
-/// Return detailed information about writer formats including aliases.
+/// Return detailed information about writer formats including aliases and
+/// extension.
 ///
 /// The returned data is a map of canonical format name to (display name,
-/// aliases).
-pub fn get_writer_formats_with_aliases(function_types: Option<Vec<String>>) -> HashMap<String, (String, Vec<String>)> {
+/// extension, aliases).
+pub fn get_writer_formats_with_aliases(
+    function_types: Option<Vec<String>>,
+) -> HashMap<String, (String, String, Vec<String>)> {
     let ftypes: Option<HashSet<String>> = function_types.map(|ft| ft.into_iter().map(|s| s.to_lowercase()).collect());
 
     WRITER_ENTRIES
@@ -519,7 +522,7 @@ pub fn get_writer_formats_with_aliases(function_types: Option<Vec<String>>) -> H
         .map(|entry| {
             let aliases: Vec<String> =
                 entry.names.iter().filter(|n| **n != entry.name).map(|n| n.to_string()).collect();
-            (entry.name.to_string(), (entry.display.to_string(), aliases))
+            (entry.name.to_string(), (entry.display.to_string(), entry.extension.to_string(), aliases))
         })
         .collect()
 }

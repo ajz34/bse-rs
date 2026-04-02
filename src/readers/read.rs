@@ -57,7 +57,7 @@ const READER_ENTRIES: &[ReaderEntry] = &[
         name: "gaussian94",
         display: "Gaussian94",
         extension: ".gbs",
-        names: &["gaussian94", "gaussian", "g94", "gbs"],
+        names: &["gaussian94", "gaussian", "g94", "gbs", "gau"],
         function: readers::g94::read_g94,
     },
     // turbomole - unique extension .tm
@@ -294,17 +294,18 @@ pub fn get_reader_formats() -> HashMap<String, String> {
     READER_ENTRIES.iter().map(|entry| (entry.name.to_string(), entry.display.to_string())).collect()
 }
 
-/// Return detailed information about reader formats including aliases.
+/// Return detailed information about reader formats including aliases and
+/// extension.
 ///
 /// The returned data is a map of canonical format name to (display name,
-/// aliases).
-pub fn get_reader_formats_with_aliases() -> HashMap<String, (String, Vec<String>)> {
+/// extension, aliases).
+pub fn get_reader_formats_with_aliases() -> HashMap<String, (String, String, Vec<String>)> {
     READER_ENTRIES
         .iter()
         .map(|entry| {
             let aliases: Vec<String> =
                 entry.names.iter().filter(|n| **n != entry.name).map(|n| n.to_string()).collect();
-            (entry.name.to_string(), (entry.display.to_string(), aliases))
+            (entry.name.to_string(), (entry.display.to_string(), entry.extension.to_string(), aliases))
         })
         .collect()
 }
