@@ -7,6 +7,8 @@
 
 A Rust library and CLI tool for retrieving, manipulating, and converting Gaussian-type orbital (GTO) basis sets for computational chemistry. This is a complete reimplementation of the Python [Basis Set Exchange](https://github.com/MolSSI-BSE/basis_set_exchange/) library, providing full API compatibility, with some additional features.
 
+> BSE? As a programmer, I don't understand Bethe-Salpeter Equation very well.
+
 ## Overview
 
 **bse-rs** provides:
