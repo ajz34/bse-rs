@@ -69,8 +69,8 @@ pub fn write_basis_to_dir_f(basis: &BseBasis, dir_path: &Path, fmt: &str) -> Res
         let filename = format!("{}{}", element_sym, extension);
         let file_path = dir_path.join(&filename);
 
-        // Write the element data
-        write_element_to_file(element_data, &file_path, &fmt_lower, &basis.function_types)?;
+        // Write the element data (pass z_str for correct element symbol in output)
+        write_element_to_file(element_data, z_str, &file_path, &fmt_lower, &basis.function_types)?;
     }
 
     Ok(())
@@ -83,6 +83,7 @@ pub fn write_basis_to_dir_f(basis: &BseBasis, dir_path: &Path, fmt: &str) -> Res
 /// writer.
 fn write_element_to_file(
     element_data: &BseBasisElement,
+    z_str: &str,
     file_path: &Path,
     fmt: &str,
     function_types: &[String],
@@ -93,7 +94,7 @@ fn write_element_to_file(
             .map_err(|e| BseError::SerdeJsonError(format!("Failed to serialize element: {}", e)))?
     } else {
         // For other formats, create a single-element basis and use the writer
-        let single_basis = create_single_element_basis(element_data, function_types);
+        let single_basis = create_single_element_basis(element_data, z_str, function_types);
         write_formatted_basis_str(&single_basis, fmt, None)
     };
 
@@ -106,11 +107,10 @@ fn write_element_to_file(
 /// Create a BseBasis containing only a single element.
 ///
 /// This is needed for non-JSON formats which expect a full BseBasis structure.
-fn create_single_element_basis(element_data: &BseBasisElement, function_types: &[String]) -> BseBasis {
-    // Use a placeholder key - the actual atomic number isn't needed for formatting
-    // since writers use element symbols from the data
+fn create_single_element_basis(element_data: &BseBasisElement, z_str: &str, function_types: &[String]) -> BseBasis {
+    // Use the actual atomic number as key so writers output correct element symbol
     let mut elements = HashMap::new();
-    elements.insert("1".to_string(), element_data.clone());
+    elements.insert(z_str.to_string(), element_data.clone());
 
     BseBasis {
         molssi_bse_schema: BseMolssiBseSchema {
