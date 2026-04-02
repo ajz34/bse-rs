@@ -185,10 +185,7 @@ pub fn parse_source_from_str(source_str: &str) -> BseDataSource {
 /// - Any other value or unset: Enable warning (default)
 pub fn is_warn_local_notfound() -> bool {
     let val = std::env::var("BSE_WARN_LOCAL_NOTFOUND").unwrap_or_default();
-    match val.to_lowercase().as_str() {
-        "0" | "false" | "no" => false,
-        _ => true,
-    }
+    !matches!(val.to_lowercase().as_str(), "0" | "false" | "no")
 }
 
 /* #endregion */
@@ -389,6 +386,22 @@ impl Default for BseGetBasisArgs {
     }
 }
 
+impl TryFrom<&str> for BseGetBasisArgs {
+    type Error = BseError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        toml::from_str(s).map_err(|e| BseError::ValueError(format!("TOML parsing error: {}", e)))
+    }
+}
+
+impl TryFrom<String> for BseGetBasisArgs {
+    type Error = BseError;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        Self::try_from(s.as_str())
+    }
+}
+
 /// Obtain a basis set.
 ///
 /// This is the main function for getting basis set information.
@@ -448,7 +461,7 @@ impl Default for BseGetBasisArgs {
 /// let basis: BseBasis = get_basis_f("sto-3g", args).unwrap();
 /// println!("Basis set: {basis:#?}");
 /// ```
-pub fn get_basis(name: &str, args: BseGetBasisArgs) -> BseBasis {
+pub fn get_basis(name: &str, args: impl TryInto<BseGetBasisArgs, Error: Into<BseError>>) -> BseBasis {
     get_basis_f(name, args).unwrap()
 }
 
@@ -775,7 +788,11 @@ fn apply_basis_manipulations(basis_dict: &mut BseBasis, args: &BseGetBasisArgs) 
     Ok(())
 }
 
-pub fn get_basis_f(name: &str, args: BseGetBasisArgs) -> Result<BseBasis, BseError> {
+pub fn get_basis_f(
+    name: &str,
+    args: impl TryInto<BseGetBasisArgs, Error: Into<BseError>>,
+) -> Result<BseBasis, BseError> {
+    let args = args.try_into().map_err(Into::into)?;
     // Handle data source selection
     match args.source {
         BseDataSource::Local => get_basis_local_f(name, &args),
@@ -850,11 +867,20 @@ pub fn get_basis_f(name: &str, args: BseGetBasisArgs) -> Result<BseBasis, BseErr
 ///   to [`get_basis`],
 ///   - `header` - Whether to include a header with information about the basis
 ///     set.
-pub fn get_formatted_basis(name: &str, fmt: &str, args: BseGetBasisArgs) -> String {
+pub fn get_formatted_basis(
+    name: &str,
+    fmt: &str,
+    args: impl TryInto<BseGetBasisArgs, Error: Into<BseError>>,
+) -> String {
     get_formatted_basis_f(name, fmt, args).unwrap()
 }
 
-pub fn get_formatted_basis_f(name: &str, fmt: &str, args: BseGetBasisArgs) -> Result<String, BseError> {
+pub fn get_formatted_basis_f(
+    name: &str,
+    fmt: &str,
+    args: impl TryInto<BseGetBasisArgs, Error: Into<BseError>>,
+) -> Result<String, BseError> {
+    let args = args.try_into().map_err(Into::into)?;
     let basis = get_basis_f(name, args.clone())?;
     let header = if args.header { Some(header_string(&basis)) } else { None };
     writers::write::write_formatted_basis_str_f(&basis, fmt, header.as_deref())

@@ -3,6 +3,7 @@
 //! This module defines the [`BseError`] enum for all error conditions
 //! that can occur when working with basis sets.
 
+use std::convert::Infallible;
 use std::error::Error;
 use std::fmt::Display;
 
@@ -49,9 +50,21 @@ impl From<serde_json::Error> for BseError {
     }
 }
 
+impl From<toml::de::Error> for BseError {
+    fn from(err: toml::de::Error) -> Self {
+        BseError::ValueError(format!("TOML parsing error: {}", err))
+    }
+}
+
 impl From<derive_builder::UninitializedFieldError> for BseError {
     fn from(err: derive_builder::UninitializedFieldError) -> Self {
         BseError::UninitializedFieldError(err)
+    }
+}
+
+impl From<Infallible> for BseError {
+    fn from(err: Infallible) -> Self {
+        match err {}
     }
 }
 

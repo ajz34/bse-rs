@@ -29,6 +29,7 @@ deunicode = { version = "1.6" }
 clap = { version = "4", features = ["derive", "color", "suggestions"] }
 clap_complete = { version = "4" }
 shellexpand = { version = "3" }
+toml = { version = "0.8" }
 
 [features]
 default = ["remote"]
@@ -37,7 +38,6 @@ remote = ["ureq"]
 [dev-dependencies]
 assert-json-diff = { version = "2.0" }
 rstest = { version = "0.25" }
-toml = { version = "0.8" }
 similar = { version = "2.7" }
 
 [profile.dev]
