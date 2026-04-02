@@ -2,6 +2,7 @@
 //!
 //! This CLI is functionally equivalent to the Python BSE CLI.
 
+use bse::cli::common::resolve_cli_format;
 use bse::cli::handlers::*;
 use bse::is_dir_format;
 use clap::{CommandFactory, Parser, Subcommand};
@@ -439,9 +440,12 @@ fn main() {
     let data_dir_str = cli.data_dir.as_ref().map(|p| p.to_string_lossy().to_string());
 
     // Check if this is a directory format (needed for output handling)
+    // Resolve CLI-only aliases like "rest" -> "dir-json" before checking
     let is_dir_output = match &cli.command {
-        Commands::GetBasis(args) => is_dir_format(&args.fmt),
-        Commands::ConvertBasis(args) => args.out_fmt.as_ref().map(|f| is_dir_format(f)).unwrap_or(false),
+        Commands::GetBasis(args) => is_dir_format(&resolve_cli_format(&args.fmt)),
+        Commands::ConvertBasis(args) => {
+            args.out_fmt.as_ref().map(|f| is_dir_format(&resolve_cli_format(f))).unwrap_or(false)
+        },
         _ => false,
     };
 

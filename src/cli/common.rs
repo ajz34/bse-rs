@@ -3,6 +3,36 @@
 //! This module provides helpers for formatting CLI output in a consistent
 //! column-aligned manner, similar to Python's `common.py`.
 
+/// Special CLI-only format aliases.
+///
+/// These are convenience aliases that work at the CLI level only,
+/// not exposed through the API.
+const CLI_FORMAT_ALIASES: &[(&str, &str, &str)] = &[("rest", "dir-json", "REST (directory only format)")];
+
+/// Resolve a CLI format name to its canonical format.
+///
+/// Handles CLI-only aliases like `rest` → `dir-json`.
+pub fn resolve_cli_format(fmt: &str) -> String {
+    let fmt_lower = fmt.to_lowercase();
+    for (alias, canonical, _display) in CLI_FORMAT_ALIASES {
+        if alias.eq_ignore_ascii_case(&fmt_lower) {
+            return canonical.to_string();
+        }
+    }
+    fmt.to_string()
+}
+
+/// Get CLI-only format entries for listing.
+///
+/// Returns entries that should be added to format lists,
+/// in the format (name, aliases, display).
+pub fn get_cli_only_formats() -> Vec<(String, String, String)> {
+    CLI_FORMAT_ALIASES
+        .iter()
+        .map(|(name, _canonical, display)| (name.to_string(), String::new(), display.to_string()))
+        .collect()
+}
+
 /// Format lines into aligned columns.
 ///
 /// Takes a list of tuples/arrays and formats them into aligned columns.

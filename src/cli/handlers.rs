@@ -9,7 +9,7 @@ use crate::prelude::*;
 use crate::{bse_raise, misc::compact_elements, BseError};
 
 use super::check::detect_format_from_extension;
-use super::common::{format_columns, format_map_columns, format_table};
+use super::common::{format_columns, format_map_columns, format_table, get_cli_only_formats, resolve_cli_format};
 
 /// Handle the `list-writer-formats` subcommand.
 pub fn handle_list_writer_formats(no_description: bool) -> Result<String, BseError> {
@@ -19,15 +19,25 @@ pub fn handle_list_writer_formats(no_description: bool) -> Result<String, BseErr
         let names: Vec<String> = formats
             .iter()
             .flat_map(|(name, (_, aliases))| std::iter::once(name.clone()).chain(aliases.clone()))
+            .chain(get_cli_only_formats().iter().map(|(name, _, _)| name.clone()))
             .collect();
-        Ok(names.join("\n"))
+        // Sort alphabetically
+        let mut sorted_names = names;
+        sorted_names.sort();
+        Ok(sorted_names.join("\n"))
     } else {
         // Format as table: name | aliases | display
         let headers = ["Name", "Aliases", "Display"];
-        let rows: Vec<Vec<String>> = formats
+        let mut rows: Vec<Vec<String>> = formats
             .iter()
             .map(|(name, (display, aliases))| vec![name.clone(), aliases.join(", "), display.clone()])
             .collect();
+        // Add CLI-only formats
+        for (name, aliases, display) in get_cli_only_formats() {
+            rows.push(vec![name, aliases, display]);
+        }
+        // Sort alphabetically by name
+        rows.sort_by(|a, b| a[0].cmp(&b[0]));
         Ok(format_table(&headers, &rows).join("\n"))
     }
 }
@@ -40,15 +50,25 @@ pub fn handle_list_reader_formats(no_description: bool) -> Result<String, BseErr
         let names: Vec<String> = formats
             .iter()
             .flat_map(|(name, (_, aliases))| std::iter::once(name.clone()).chain(aliases.clone()))
+            .chain(get_cli_only_formats().iter().map(|(name, _, _)| name.clone()))
             .collect();
-        Ok(names.join("\n"))
+        // Sort alphabetically
+        let mut sorted_names = names;
+        sorted_names.sort();
+        Ok(sorted_names.join("\n"))
     } else {
         // Format as table: name | aliases | display
         let headers = ["Name", "Aliases", "Display"];
-        let rows: Vec<Vec<String>> = formats
+        let mut rows: Vec<Vec<String>> = formats
             .iter()
             .map(|(name, (display, aliases))| vec![name.clone(), aliases.join(", "), display.clone()])
             .collect();
+        // Add CLI-only formats
+        for (name, aliases, display) in get_cli_only_formats() {
+            rows.push(vec![name, aliases, display]);
+        }
+        // Sort alphabetically by name
+        rows.sort_by(|a, b| a[0].cmp(&b[0]));
         Ok(format_table(&headers, &rows).join("\n"))
     }
 }
@@ -167,19 +187,22 @@ pub fn handle_get_basis(
         .data_dir(data_dir)
         .build()?;
 
+    // Resolve CLI-only format aliases (e.g., "rest" -> "dir-json")
+    let resolved_fmt = resolve_cli_format(&fmt);
+
     // Check if directory format
-    if is_dir_format(&fmt) {
+    if is_dir_format(&resolved_fmt) {
         // For directory format, output_path is required
         let dir_path = output_path
             .ok_or_else(|| BseError::ValueError("Directory format requires output path (-o option)".to_string()))?;
 
-        let underlying_fmt = strip_dir_prefix(&fmt);
+        let underlying_fmt = strip_dir_prefix(&resolved_fmt);
         let basis_data = get_basis(&basis, args);
         write_basis_to_dir_f(&basis_data, &dir_path, underlying_fmt)?;
 
         Ok(format!("Basis set '{}' written to {}", basis, dir_path.display()))
     } else {
-        Ok(get_formatted_basis(&basis, &fmt, args))
+        Ok(get_formatted_basis(&basis, &resolved_fmt, args))
     }
 }
 
@@ -327,14 +350,14 @@ pub fn handle_convert_basis(
     let output_is_dir = output_file.is_dir();
 
     // Detect formats from file extensions if not specified
-    let resolved_in_fmt = in_fmt.or_else(|| {
+    let resolved_in_fmt = in_fmt.map(|f| resolve_cli_format(&f)).or_else(|| {
         if input_is_dir {
             Some("dir-json".to_string())
         } else {
             detect_format_from_extension(&input_file.to_string_lossy(), true)
         }
     });
-    let resolved_out_fmt = out_fmt.or_else(|| {
+    let resolved_out_fmt = out_fmt.map(|f| resolve_cli_format(&f)).or_else(|| {
         if output_is_dir {
             Some("dir-json".to_string())
         } else {
